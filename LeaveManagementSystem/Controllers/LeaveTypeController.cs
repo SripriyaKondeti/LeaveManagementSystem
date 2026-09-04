@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagementSystem.Controllers;
 
-[Route("api/leave-types")]
+[Route("api/leavetypes")]
 [ApiController]
 public class LeaveTypeController : ControllerBase
 {
@@ -18,7 +18,7 @@ public class LeaveTypeController : ControllerBase
     }
 
 
-    // GET: api/leave-types
+    // GET: api/leavetypes
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LeaveTypeDto>>> GetLeaveTypes()
     {
@@ -36,7 +36,7 @@ public class LeaveTypeController : ControllerBase
     }
 
 
-    // GET: api/leave-types/1
+    // GET: api/leavetypes/1
     [HttpGet("{id}")]
     public async Task<ActionResult<LeaveTypeDto>> GetLeaveType(int id)
     {
@@ -60,7 +60,7 @@ public class LeaveTypeController : ControllerBase
     }
 
 
-    // POST: api/leave-types
+    // POST: api/leavetypes
     [HttpPost]
     public async Task<ActionResult<LeaveTypeDto>> CreateLeaveType(
         LeaveTypeDto leaveTypeDto)
@@ -86,7 +86,7 @@ public class LeaveTypeController : ControllerBase
     }
 
 
-    // PUT: api/leave-types/1
+    // PUT: api/leavetypes/1
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateLeaveType(
         int id,
@@ -109,7 +109,7 @@ public class LeaveTypeController : ControllerBase
     }
 
 
-    // DELETE: api/leave-types/1
+    // DELETE: api/leavetypes/1
     // Soft Delete / Deactivate
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeactivateLeaveType(int id)
