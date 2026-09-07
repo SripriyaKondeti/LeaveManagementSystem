@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using LeaveManagementSystem.Data;
 using LeaveManagementSystem.DTOs;
-using LeaveManagementSystem.Models;
-using Microsoft.EntityFrameworkCore;
+using LeaveManagementSystem.Services;
 
 namespace LeaveManagementSystem.Controllers;
 
@@ -10,52 +8,27 @@ namespace LeaveManagementSystem.Controllers;
 [ApiController]
 public class EmployeeController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly EmployeeService _employeeService;
 
-    public EmployeeController(ApplicationDbContext context)
+    public EmployeeController(EmployeeService employeeService)
     {
-        _context = context;
+        _employeeService = employeeService;
     }
-
 
     // GET: api/employees
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetEmployees()
     {
-        var employees = await _context.Employees
-            .Select(e => new EmployeeDto
-            {
-                EmployeeId = e.EmployeeId,
-                EmployeeCode = e.EmployeeCode,
-                Name = e.Name,
-                Email = e.Email,
-                Department = e.Department,
-                JoiningDate = e.JoiningDate,
-                IsActive = e.IsActive
-            })
-            .ToListAsync();
+        var employees = await _employeeService.GetEmployeesAsync();
 
         return Ok(employees);
     }
-
 
     // GET: api/employees/1
     [HttpGet("{id}")]
     public async Task<ActionResult<EmployeeDto>> GetEmployee(int id)
     {
-        var employee = await _context.Employees
-            .Where(e => e.EmployeeId == id)
-            .Select(e => new EmployeeDto
-            {
-                EmployeeId = e.EmployeeId,
-                EmployeeCode = e.EmployeeCode,
-                Name = e.Name,
-                Email = e.Email,
-                Department = e.Department,
-                JoiningDate = e.JoiningDate,
-                IsActive = e.IsActive
-            })
-            .FirstOrDefaultAsync();
+        var employee = await _employeeService.GetEmployeeAsync(id);
 
         if (employee == null)
         {
@@ -65,76 +38,49 @@ public class EmployeeController : ControllerBase
         return Ok(employee);
     }
 
-
     // POST: api/employees
     [HttpPost]
-    public async Task<ActionResult<EmployeeDto>> CreateEmployee(EmployeeDto employeeDto)
+    public async Task<ActionResult<EmployeeDto>> CreateEmployee(
+        EmployeeDto employeeDto)
     {
-        var employee = new Employee
-        {
-            EmployeeCode = employeeDto.EmployeeCode,
-            Name = employeeDto.Name,
-            Email = employeeDto.Email,
-            Department = employeeDto.Department,
-            JoiningDate = employeeDto.JoiningDate,
-            IsActive = employeeDto.IsActive
-        };
-
-        _context.Employees.Add(employee);
-
-        await _context.SaveChangesAsync();
-
-        employeeDto.EmployeeId = employee.EmployeeId;
+        var employee =
+            await _employeeService.CreateEmployeeAsync(employeeDto);
 
         return CreatedAtAction(
             nameof(GetEmployee),
             new { id = employee.EmployeeId },
-            employeeDto
-        );
+            employee);
     }
-
 
     // PUT: api/employees/1
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateEmployee(
-    int id,
-    EmployeeDto employeeDto)
+        int id,
+        EmployeeDto employeeDto)
     {
-        var employee = await _context.Employees.FindAsync(id);
+        var updated =
+            await _employeeService.UpdateEmployeeAsync(id, employeeDto);
 
-        if (employee == null)
+        if (!updated)
         {
             return NotFound();
         }
 
-        employee.EmployeeCode = employeeDto.EmployeeCode;
-        employee.Name = employeeDto.Name;
-        employee.Email = employeeDto.Email;
-        employee.Department = employeeDto.Department;
-        employee.JoiningDate = employeeDto.JoiningDate;
-        employee.IsActive = employeeDto.IsActive;
-
-        await _context.SaveChangesAsync();
-
         return NoContent();
     }
-
 
     // DELETE: api/employees/1
     // Soft Delete / Deactivate
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeactivateEmployee(int id)
     {
-        var employee = await _context.Employees.FindAsync(id);
+        var deactivated =
+            await _employeeService.DeactivateEmployeeAsync(id);
 
-        if (employee == null)
+        if (!deactivated)
         {
             return NotFound();
         }
-
-        employee.IsActive = false;
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }

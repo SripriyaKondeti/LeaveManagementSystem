@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using LeaveManagementSystem.Data;
 using LeaveManagementSystem.DTOs;
-using Microsoft.EntityFrameworkCore;
+using LeaveManagementSystem.Services;
 
 namespace LeaveManagementSystem.Controllers;
 
@@ -9,69 +8,18 @@ namespace LeaveManagementSystem.Controllers;
 [ApiController]
 public class DashboardController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly DashboardService _dashboardService;
 
-    public DashboardController(ApplicationDbContext context)
+    public DashboardController(DashboardService dashboardService)
     {
-        _context = context;
+        _dashboardService = dashboardService;
     }
-
 
     // GET: api/dashboard/leave-summary
     [HttpGet("leave-summary")]
     public async Task<ActionResult<LeaveSummaryDto>> GetLeaveSummary()
     {
-        // Total employees
-        var totalEmployees = await _context.Employees
-            .CountAsync();
-
-
-        // Active employees
-        var activeEmployees = await _context.Employees
-            .CountAsync(e => e.IsActive);
-
-
-        // Pending requests
-        var pendingRequests = await _context.LeaveRequests
-            .CountAsync(l => l.Status == "Pending");
-
-
-        // Approved requests
-        var approvedRequests = await _context.LeaveRequests
-            .CountAsync(l => l.Status == "Approved");
-
-
-        // Rejected requests
-        var rejectedRequests = await _context.LeaveRequests
-            .CountAsync(l => l.Status == "Rejected");
-
-
-        // Get approved requests
-        var approvedLeaves = await _context.LeaveRequests
-            .Where(l => l.Status == "Approved")
-            .Select(l => new
-            {
-                l.FromDate,
-                l.ToDate
-            })
-            .ToListAsync();
-
-
-        // Calculate total approved leave days
-        var totalLeavesTaken = approvedLeaves
-            .Sum(l => (l.ToDate - l.FromDate).Days + 1);
-
-
-        var summary = new LeaveSummaryDto
-        {
-            TotalEmployees = totalEmployees,
-            ActiveEmployees = activeEmployees,
-            PendingRequests = pendingRequests,
-            ApprovedRequests = approvedRequests,
-            RejectedRequests = rejectedRequests,
-            TotalLeavesTaken = totalLeavesTaken
-        };
-
+        var summary = await _dashboardService.GetLeaveSummaryAsync();
 
         return Ok(summary);
     }

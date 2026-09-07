@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using LeaveManagementSystem.Data;
 using LeaveManagementSystem.DTOs;
-using Microsoft.EntityFrameworkCore;
+using LeaveManagementSystem.Services;
 
 namespace LeaveManagementSystem.Controllers;
 
@@ -9,40 +8,26 @@ namespace LeaveManagementSystem.Controllers;
 [ApiController]
 public class LeaveBalanceController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly LeaveBalanceService _leaveBalanceService;
 
-    public LeaveBalanceController(ApplicationDbContext context)
+    public LeaveBalanceController(
+        LeaveBalanceService leaveBalanceService)
     {
-        _context = context;
+        _leaveBalanceService = leaveBalanceService;
     }
-
 
     // GET: api/employees/1/leave-balance
     [HttpGet("{employeeId}/leave-balance")]
     public async Task<ActionResult<IEnumerable<LeaveBalanceDto>>> GetLeaveBalance(
         int employeeId)
     {
-        // Check employee exists
-        var employeeExists = await _context.Employees
-            .AnyAsync(e => e.EmployeeId == employeeId);
+        var balances = await _leaveBalanceService
+            .GetLeaveBalanceAsync(employeeId);
 
-        if (!employeeExists)
+        if (balances == null)
         {
             return NotFound("Employee not found.");
         }
-
-
-        var balances = await _context.LeaveBalances
-            .Where(b => b.EmployeeId == employeeId)
-            .Select(b => new LeaveBalanceDto
-            {
-                LeaveType = b.LeaveType.LeaveTypeName,
-                TotalDays = b.TotalDays,
-                UsedDays = b.UsedDays,
-                RemainingDays = b.TotalDays - b.UsedDays
-            })
-            .ToListAsync();
-
 
         return Ok(balances);
     }

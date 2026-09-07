@@ -1,4 +1,5 @@
 using LeaveManagementSystem.Data;
+using LeaveManagementSystem.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
-
+builder.Services.AddScoped<EmployeeService>();
+builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<LeaveRequestService>();
+builder.Services.AddScoped<LeaveBalanceService>();
+builder.Services.AddScoped<LeaveTypeService>();
 var app = builder.Build();
 
 // Swagger
