@@ -97,10 +97,9 @@ public class LeaveRequestController : ControllerBase
         var result = await _leaveRequestService
             .ApproveLeaveRequestAsync(id, leaveActionDto);
 
-        if (!result)
+        if (result != null)
         {
-            return BadRequest(
-                "Unable to approve leave request.");
+            return BadRequest(result);
         }
 
         return NoContent();
@@ -115,10 +114,9 @@ public class LeaveRequestController : ControllerBase
         var result = await _leaveRequestService
             .RejectLeaveRequestAsync(id, leaveActionDto);
 
-        if (!result)
+        if (result != null)
         {
-            return BadRequest(
-                "Unable to reject leave request.");
+            return BadRequest(result);
         }
 
         return NoContent();

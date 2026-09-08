@@ -1,6 +1,7 @@
 using LeaveManagementSystem.Data;
 using LeaveManagementSystem.Services;
 using Microsoft.EntityFrameworkCore;
+using LeaveManagementSystem.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.MapControllers();
 
 app.Run();

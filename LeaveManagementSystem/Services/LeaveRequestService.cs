@@ -216,7 +216,7 @@ public class LeaveRequestService
     }
 
     // Approve leave request
-    public async Task<bool> ApproveLeaveRequestAsync(
+    public async Task<string?> ApproveLeaveRequestAsync(
         int id,
         LeaveActionDto leaveActionDto)
     {
@@ -225,12 +225,17 @@ public class LeaveRequestService
 
         if (leaveRequest == null)
         {
-            return false;
+            return "Leave request not found.";
         }
 
-        if (leaveRequest.Status != "Pending")
+        if (leaveRequest.Status == "Approved")
         {
-            return false;
+            return "Leave request is already approved.";
+        }
+
+        if (leaveRequest.Status == "Rejected")
+        {
+            return "Leave request is already rejected.";
         }
 
         var numberOfDays =
@@ -243,7 +248,7 @@ public class LeaveRequestService
 
         if (leaveBalance == null)
         {
-            return false;
+            return "Leave balance not found.";
         }
 
         var remainingDays =
@@ -251,7 +256,7 @@ public class LeaveRequestService
 
         if (numberOfDays > remainingDays)
         {
-            return false;
+            return "Insufficient leave balance.";
         }
 
         leaveRequest.Status = "Approved";
@@ -266,11 +271,11 @@ public class LeaveRequestService
 
         await _context.SaveChangesAsync();
 
-        return true;
+        return null;
     }
 
     // Reject leave request
-    public async Task<bool> RejectLeaveRequestAsync(
+    public async Task<string?> RejectLeaveRequestAsync(
         int id,
         LeaveActionDto leaveActionDto)
     {
@@ -279,12 +284,17 @@ public class LeaveRequestService
 
         if (leaveRequest == null)
         {
-            return false;
+            return "Leave request not found.";
         }
 
-        if (leaveRequest.Status != "Pending")
+        if (leaveRequest.Status == "Rejected")
         {
-            return false;
+            return "Leave request is already rejected.";
+        }
+
+        if (leaveRequest.Status == "Approved")
+        {
+            return "Leave request is already approved.";
         }
 
         leaveRequest.Status = "Rejected";
@@ -299,6 +309,6 @@ public class LeaveRequestService
 
         await _context.SaveChangesAsync();
 
-        return true;
+        return null;
     }
 }
