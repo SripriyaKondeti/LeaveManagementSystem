@@ -1,6 +1,6 @@
 ﻿using LeaveManagementSystem.Models;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Identity;
 namespace LeaveManagementSystem.Data;
 
 public class ApplicationDbContext : DbContext
@@ -18,6 +18,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
 
     public DbSet<LeaveBalance> LeaveBalances { get; set; }
+
+    public DbSet<User> Users { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -221,6 +223,12 @@ public class ApplicationDbContext : DbContext
                 TotalDays = 12,
                 UsedDays = 0
             }
+
         );
+        modelBuilder.Entity<User>()
+               .HasOne(u => u.Employee)
+               .WithMany()
+               .HasForeignKey(u => u.EmployeeId)
+               .OnDelete(DeleteBehavior.Restrict);
     }
 }

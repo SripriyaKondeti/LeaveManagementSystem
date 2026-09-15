@@ -32,7 +32,7 @@ public class EmployeeController : ControllerBase
 
         if (employee == null)
         {
-            return NotFound();
+            return NotFound($"Employee with ID {id} does not exist.");
         }
 
         return Ok(employee);
@@ -43,8 +43,8 @@ public class EmployeeController : ControllerBase
     public async Task<ActionResult<EmployeeDto>> CreateEmployee(
         EmployeeDto employeeDto)
     {
-        var employee =
-            await _employeeService.CreateEmployeeAsync(employeeDto);
+        var employee = await _employeeService
+            .CreateEmployeeAsync(employeeDto);
 
         return CreatedAtAction(
             nameof(GetEmployee),
@@ -58,12 +58,13 @@ public class EmployeeController : ControllerBase
         int id,
         EmployeeDto employeeDto)
     {
-        var updated =
-            await _employeeService.UpdateEmployeeAsync(id, employeeDto);
+        var updated = await _employeeService
+            .UpdateEmployeeAsync(id, employeeDto);
 
         if (!updated)
         {
-            return NotFound();
+            return NotFound(
+                $"Employee with ID {id} does not exist.");
         }
 
         return NoContent();
@@ -74,12 +75,13 @@ public class EmployeeController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeactivateEmployee(int id)
     {
-        var deactivated =
-            await _employeeService.DeactivateEmployeeAsync(id);
+        var deactivated = await _employeeService
+            .DeactivateEmployeeAsync(id);
 
         if (!deactivated)
         {
-            return NotFound();
+            return NotFound(
+                $"Employee with ID {id} does not exist.");
         }
 
         return NoContent();

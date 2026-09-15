@@ -34,7 +34,8 @@ public class LeaveTypeController : ControllerBase
 
         if (leaveType == null)
         {
-            return NotFound();
+            return NotFound(
+                $"Leave type with ID {id} does not exist.");
         }
 
         return Ok(leaveType);
@@ -51,8 +52,7 @@ public class LeaveTypeController : ControllerBase
         return CreatedAtAction(
             nameof(GetLeaveType),
             new { id = leaveType.LeaveTypeId },
-            leaveType
-        );
+            leaveType);
     }
 
     // PUT: api/leavetypes/1
@@ -66,7 +66,8 @@ public class LeaveTypeController : ControllerBase
 
         if (!updated)
         {
-            return NotFound();
+            return NotFound(
+                $"Leave type with ID {id} does not exist.");
         }
 
         return NoContent();
@@ -82,7 +83,8 @@ public class LeaveTypeController : ControllerBase
 
         if (!deactivated)
         {
-            return NotFound();
+            return NotFound(
+                $"Leave type with ID {id} does not exist.");
         }
 
         return NoContent();

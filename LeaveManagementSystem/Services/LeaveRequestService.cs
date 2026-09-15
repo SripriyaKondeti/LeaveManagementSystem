@@ -15,35 +15,57 @@ public class LeaveRequestService
     }
 
     // Apply for leave
-    public async Task<LeaveRequestDto?> CreateLeaveRequestAsync(
+    public async Task<LeaveRequestDto> CreateLeaveRequestAsync(
         CreateLeaveRequestDto leaveRequestDto)
     {
+        // 1. Check employee exists
         var employee = await _context.Employees
             .FirstOrDefaultAsync(e =>
                 e.EmployeeId == leaveRequestDto.EmployeeId);
 
-        if (employee == null || !employee.IsActive)
+        if (employee == null)
         {
-            return null;
+            throw new KeyNotFoundException(
+                $"Employee with ID {leaveRequestDto.EmployeeId} does not exist.");
         }
 
+        // 2. Check employee is active
+        if (!employee.IsActive)
+        {
+            throw new InvalidOperationException(
+                $"Employee with ID {leaveRequestDto.EmployeeId} is not active.");
+        }
+
+        // 3. Check leave type exists
         var leaveType = await _context.LeaveTypes
             .FirstOrDefaultAsync(l =>
                 l.LeaveTypeId == leaveRequestDto.LeaveTypeId);
 
-        if (leaveType == null || !leaveType.IsActive)
+        if (leaveType == null)
         {
-            return null;
+            throw new KeyNotFoundException(
+                $"Leave type with ID {leaveRequestDto.LeaveTypeId} does not exist.");
         }
 
+        // 4. Check leave type is active
+        if (!leaveType.IsActive)
+        {
+            throw new InvalidOperationException(
+                "The selected leave type is not active.");
+        }
+
+        // 5. Validate dates
         if (leaveRequestDto.FromDate > leaveRequestDto.ToDate)
         {
-            return null;
+            throw new InvalidOperationException(
+                "From date cannot be after To date.");
         }
 
+        // 6. Calculate number of days internally
         var numberOfDays =
             (leaveRequestDto.ToDate - leaveRequestDto.FromDate).Days + 1;
 
+        // 7. Check leave balance
         var leaveBalance = await _context.LeaveBalances
             .FirstOrDefaultAsync(b =>
                 b.EmployeeId == leaveRequestDto.EmployeeId &&
@@ -51,17 +73,22 @@ public class LeaveRequestService
 
         if (leaveBalance == null)
         {
-            return null;
+            throw new KeyNotFoundException(
+                "Leave balance was not found for this employee and leave type.");
         }
 
+        // 8. Calculate remaining days
         var remainingDays =
             leaveBalance.TotalDays - leaveBalance.UsedDays;
 
+        // 9. Check sufficient balance
         if (numberOfDays > remainingDays)
         {
-            return null;
+            throw new InvalidOperationException(
+                $"Insufficient leave balance. Remaining days: {remainingDays}.");
         }
 
+        // 10. Check overlapping leave
         var overlappingLeave = await _context.LeaveRequests
             .AnyAsync(l =>
                 l.EmployeeId == leaveRequestDto.EmployeeId &&
@@ -71,9 +98,11 @@ public class LeaveRequestService
 
         if (overlappingLeave)
         {
-            return null;
+            throw new InvalidOperationException(
+                "The requested leave dates overlap with an existing leave request.");
         }
 
+        // 11. Create leave request
         var leaveRequest = new LeaveRequest
         {
             EmployeeId = leaveRequestDto.EmployeeId,
@@ -81,8 +110,11 @@ public class LeaveRequestService
             FromDate = leaveRequestDto.FromDate,
             ToDate = leaveRequestDto.ToDate,
             Reason = leaveRequestDto.Reason,
+
+            // Controlled by server
             Status = "Pending",
             AppliedDate = DateTime.Now,
+
             ApprovedBy = null,
             Comments = null
         };
@@ -91,6 +123,7 @@ public class LeaveRequestService
 
         await _context.SaveChangesAsync();
 
+        // 12. Return response
         return new LeaveRequestDto
         {
             LeaveRequestId = leaveRequest.LeaveRequestId,
@@ -105,6 +138,7 @@ public class LeaveRequestService
             Comments = leaveRequest.Comments
         };
     }
+
 
     // Get all leave requests with filters
     public async Task<IEnumerable<LeaveRequestDto>> GetLeaveRequestsAsync(
@@ -164,6 +198,7 @@ public class LeaveRequestService
             .ToListAsync();
     }
 
+
     // Get one leave request
     public async Task<LeaveRequestDto?> GetLeaveRequestAsync(int id)
     {
@@ -185,10 +220,12 @@ public class LeaveRequestService
             .FirstOrDefaultAsync();
     }
 
+
     // Employee leave history
     public async Task<IEnumerable<LeaveRequestDto>?> GetEmployeeLeavesAsync(
         int employeeId)
     {
+        // Check employee exists
         var employeeExists = await _context.Employees
             .AnyAsync(e => e.EmployeeId == employeeId);
 
@@ -215,32 +252,40 @@ public class LeaveRequestService
             .ToListAsync();
     }
 
+
     // Approve leave request
-    public async Task<string?> ApproveLeaveRequestAsync(
+    public async Task ApproveLeaveRequestAsync(
         int id,
         LeaveActionDto leaveActionDto)
     {
+        // 1. Find leave request
         var leaveRequest = await _context.LeaveRequests
             .FindAsync(id);
 
         if (leaveRequest == null)
         {
-            return "Leave request not found.";
+            throw new KeyNotFoundException(
+                $"Leave request with ID {id} does not exist.");
         }
 
+        // 2. Check current status
         if (leaveRequest.Status == "Approved")
         {
-            return "Leave request is already approved.";
+            throw new InvalidOperationException(
+                "Leave request is already approved.");
         }
 
         if (leaveRequest.Status == "Rejected")
         {
-            return "Leave request is already rejected.";
+            throw new InvalidOperationException(
+                "Leave request is already rejected.");
         }
 
+        // 3. Calculate number of days
         var numberOfDays =
             (leaveRequest.ToDate - leaveRequest.FromDate).Days + 1;
 
+        // 4. Find leave balance
         var leaveBalance = await _context.LeaveBalances
             .FirstOrDefaultAsync(b =>
                 b.EmployeeId == leaveRequest.EmployeeId &&
@@ -248,17 +293,22 @@ public class LeaveRequestService
 
         if (leaveBalance == null)
         {
-            return "Leave balance not found.";
+            throw new KeyNotFoundException(
+                "Leave balance was not found for this employee and leave type.");
         }
 
+        // 5. Calculate remaining days
         var remainingDays =
             leaveBalance.TotalDays - leaveBalance.UsedDays;
 
+        // 6. Check sufficient balance
         if (numberOfDays > remainingDays)
         {
-            return "Insufficient leave balance.";
+            throw new InvalidOperationException(
+                $"Insufficient leave balance. Remaining days: {remainingDays}.");
         }
 
+        // 7. Approve request
         leaveRequest.Status = "Approved";
 
         leaveRequest.ApprovedBy =
@@ -267,36 +317,42 @@ public class LeaveRequestService
         leaveRequest.Comments =
             leaveActionDto.Comments;
 
+        // 8. Update balance only after approval
         leaveBalance.UsedDays += numberOfDays;
 
         await _context.SaveChangesAsync();
-
-        return null;
     }
 
+
     // Reject leave request
-    public async Task<string?> RejectLeaveRequestAsync(
+    public async Task RejectLeaveRequestAsync(
         int id,
         LeaveActionDto leaveActionDto)
     {
+        // 1. Find leave request
         var leaveRequest = await _context.LeaveRequests
             .FindAsync(id);
 
         if (leaveRequest == null)
         {
-            return "Leave request not found.";
+            throw new KeyNotFoundException(
+                $"Leave request with ID {id} does not exist.");
         }
 
+        // 2. Check current status
         if (leaveRequest.Status == "Rejected")
         {
-            return "Leave request is already rejected.";
+            throw new InvalidOperationException(
+                "Leave request is already rejected.");
         }
 
         if (leaveRequest.Status == "Approved")
         {
-            return "Leave request is already approved.";
+            throw new InvalidOperationException(
+                "Leave request is already approved.");
         }
 
+        // 3. Reject request
         leaveRequest.Status = "Rejected";
 
         leaveRequest.ApprovedBy =
@@ -305,10 +361,8 @@ public class LeaveRequestService
         leaveRequest.Comments =
             leaveActionDto.Comments;
 
-        // Do not update balance for rejected leave
+        // Balance is NOT updated for rejected leave
 
         await _context.SaveChangesAsync();
-
-        return null;
     }
 }

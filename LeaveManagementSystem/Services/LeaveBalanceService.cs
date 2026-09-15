@@ -17,12 +17,19 @@ public class LeaveBalanceService
         int employeeId)
     {
         // Check employee exists
-        var employeeExists = await _context.Employees
-            .AnyAsync(e => e.EmployeeId == employeeId);
+        var employee = await _context.Employees
+            .FirstOrDefaultAsync(e => e.EmployeeId == employeeId);
 
-        if (!employeeExists)
+        if (employee == null)
         {
             return null;
+        }
+
+        // Check employee is active
+        if (!employee.IsActive)
+        {
+            throw new InvalidOperationException(
+                $"Employee with ID {employeeId} is inactive.");
         }
 
         var balances = await _context.LeaveBalances

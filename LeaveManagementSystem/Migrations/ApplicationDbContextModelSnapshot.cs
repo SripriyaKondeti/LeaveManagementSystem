@@ -318,6 +318,39 @@ namespace LeaveManagementSystem.Migrations
                         });
                 });
 
+            modelBuilder.Entity("LeaveManagementSystem.Models.User", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("LeaveManagementSystem.Models.LeaveBalance", b =>
                 {
                     b.HasOne("LeaveManagementSystem.Models.Employee", "Employee")
@@ -354,6 +387,16 @@ namespace LeaveManagementSystem.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("LeaveType");
+                });
+
+            modelBuilder.Entity("LeaveManagementSystem.Models.User", b =>
+                {
+                    b.HasOne("LeaveManagementSystem.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
                 });
 
             modelBuilder.Entity("LeaveManagementSystem.Models.Employee", b =>

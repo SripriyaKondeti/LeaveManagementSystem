@@ -47,9 +47,35 @@ public class LeaveTypeService
     public async Task<LeaveTypeDto> CreateLeaveTypeAsync(
         LeaveTypeDto leaveTypeDto)
     {
+        // Validate leave type name
+        if (string.IsNullOrWhiteSpace(leaveTypeDto.LeaveTypeName))
+        {
+            throw new InvalidOperationException(
+                "Leave type name cannot be empty.");
+        }
+
+        // Validate maximum days
+        if (leaveTypeDto.MaximumDays <= 0)
+        {
+            throw new InvalidOperationException(
+                "Maximum days must be greater than 0.");
+        }
+
+        // Check for duplicate leave type name
+        var nameExists = await _context.LeaveTypes
+            .AnyAsync(l =>
+                l.LeaveTypeName.ToLower() ==
+                leaveTypeDto.LeaveTypeName.Trim().ToLower());
+
+        if (nameExists)
+        {
+            throw new InvalidOperationException(
+                $"Leave type '{leaveTypeDto.LeaveTypeName.Trim()}' already exists.");
+        }
+
         var leaveType = new LeaveType
         {
-            LeaveTypeName = leaveTypeDto.LeaveTypeName,
+            LeaveTypeName = leaveTypeDto.LeaveTypeName.Trim(),
             MaximumDays = leaveTypeDto.MaximumDays,
             IsActive = leaveTypeDto.IsActive
         };
@@ -59,6 +85,7 @@ public class LeaveTypeService
         await _context.SaveChangesAsync();
 
         leaveTypeDto.LeaveTypeId = leaveType.LeaveTypeId;
+        leaveTypeDto.LeaveTypeName = leaveType.LeaveTypeName;
 
         return leaveTypeDto;
     }
@@ -75,7 +102,34 @@ public class LeaveTypeService
             return false;
         }
 
-        leaveType.LeaveTypeName = leaveTypeDto.LeaveTypeName;
+        // Validate leave type name
+        if (string.IsNullOrWhiteSpace(leaveTypeDto.LeaveTypeName))
+        {
+            throw new InvalidOperationException(
+                "Leave type name cannot be empty.");
+        }
+
+        // Validate maximum days
+        if (leaveTypeDto.MaximumDays <= 0)
+        {
+            throw new InvalidOperationException(
+                "Maximum days must be greater than 0.");
+        }
+
+        // Check for duplicate leave type name
+        var nameExists = await _context.LeaveTypes
+            .AnyAsync(l =>
+                l.LeaveTypeId != id &&
+                l.LeaveTypeName.ToLower() ==
+                leaveTypeDto.LeaveTypeName.Trim().ToLower());
+
+        if (nameExists)
+        {
+            throw new InvalidOperationException(
+                $"Leave type '{leaveTypeDto.LeaveTypeName.Trim()}' already exists.");
+        }
+
+        leaveType.LeaveTypeName = leaveTypeDto.LeaveTypeName.Trim();
         leaveType.MaximumDays = leaveTypeDto.MaximumDays;
         leaveType.IsActive = leaveTypeDto.IsActive;
 

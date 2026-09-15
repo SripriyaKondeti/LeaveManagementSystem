@@ -22,26 +22,62 @@ namespace LeaveManagementSystem.Middleware
             {
                 await _next(context);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Authentication failed.");
+
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.Unauthorized,
+                    ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Resource not found.");
+
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.NotFound,
+                    ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Business validation failed.");
+
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.BadRequest,
+                    ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
                     "An unhandled exception occurred while processing the request.");
 
-                context.Response.StatusCode =
-                    (int)HttpStatusCode.InternalServerError;
-
-                context.Response.ContentType = "application/json";
-
-                var response = new
-                {
-                    statusCode = 500,
-                    message = "An unexpected error occurred. Please try again later."
-                };
-
-                await context.Response.WriteAsync(
-                    JsonSerializer.Serialize(response));
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.InternalServerError,
+                    "An unexpected error occurred. Please try again later.");
             }
+        }
+
+        private static async Task WriteErrorResponseAsync(
+            HttpContext context,
+            HttpStatusCode statusCode,
+            string message)
+        {
+            context.Response.StatusCode = (int)statusCode;
+            context.Response.ContentType = "application/json";
+
+            var response = new
+            {
+                statusCode = (int)statusCode,
+                message = message
+            };
+
+            await context.Response.WriteAsync(
+                JsonSerializer.Serialize(response));
         }
     }
 }

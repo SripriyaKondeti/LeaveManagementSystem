@@ -24,16 +24,12 @@ public class LeaveRequestController : ControllerBase
         var result = await _leaveRequestService
             .CreateLeaveRequestAsync(leaveRequestDto);
 
-        if (result == null)
-        {
-            return BadRequest();
-        }
-
         return CreatedAtAction(
             nameof(GetLeaveRequest),
             new { id = result.LeaveRequestId },
             result);
     }
+
 
     // GET: api/leaves
     [HttpGet]
@@ -56,6 +52,7 @@ public class LeaveRequestController : ControllerBase
         return Ok(leaveRequests);
     }
 
+
     // GET: api/leaves/1
     [HttpGet("{id}")]
     public async Task<ActionResult<LeaveRequestDto>>
@@ -66,11 +63,13 @@ public class LeaveRequestController : ControllerBase
 
         if (leaveRequest == null)
         {
-            return NotFound();
+            return NotFound(
+                $"Leave request with ID {id} does not exist.");
         }
 
         return Ok(leaveRequest);
     }
+
 
     // GET: api/employees/1/leaves
     [HttpGet("/api/employees/{employeeId}/leaves")]
@@ -82,11 +81,13 @@ public class LeaveRequestController : ControllerBase
 
         if (leaveRequests == null)
         {
-            return NotFound("Employee not found.");
+            return NotFound(
+                $"Employee with ID {employeeId} does not exist.");
         }
 
         return Ok(leaveRequests);
     }
+
 
     // PUT: api/leaves/1/approve
     [HttpPut("{id}/approve")]
@@ -94,16 +95,12 @@ public class LeaveRequestController : ControllerBase
         int id,
         LeaveActionDto leaveActionDto)
     {
-        var result = await _leaveRequestService
+        await _leaveRequestService
             .ApproveLeaveRequestAsync(id, leaveActionDto);
-
-        if (result != null)
-        {
-            return BadRequest(result);
-        }
 
         return NoContent();
     }
+
 
     // PUT: api/leaves/1/reject
     [HttpPut("{id}/reject")]
@@ -111,13 +108,8 @@ public class LeaveRequestController : ControllerBase
         int id,
         LeaveActionDto leaveActionDto)
     {
-        var result = await _leaveRequestService
+        await _leaveRequestService
             .RejectLeaveRequestAsync(id, leaveActionDto);
-
-        if (result != null)
-        {
-            return BadRequest(result);
-        }
 
         return NoContent();
     }
