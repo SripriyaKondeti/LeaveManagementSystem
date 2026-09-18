@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using LeaveManagementSystem.DTOs;
 using LeaveManagementSystem.Services;
 
@@ -6,6 +7,7 @@ namespace LeaveManagementSystem.Controllers;
 
 [Route("api/leavetypes")]
 [ApiController]
+[Authorize]
 public class LeaveTypeController : ControllerBase
 {
     private readonly LeaveTypeService _leaveTypeService;
@@ -16,9 +18,17 @@ public class LeaveTypeController : ControllerBase
     }
 
     // GET: api/leavetypes
+    // Manager only
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LeaveTypeDto>>> GetLeaveTypes()
     {
+        if (!User.IsInRole("Manager"))
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Only managers can view leave types.");
+        }
+
         var leaveTypes = await _leaveTypeService
             .GetLeaveTypesAsync();
 
@@ -26,9 +36,17 @@ public class LeaveTypeController : ControllerBase
     }
 
     // GET: api/leavetypes/1
+    // Manager only
     [HttpGet("{id}")]
     public async Task<ActionResult<LeaveTypeDto>> GetLeaveType(int id)
     {
+        if (!User.IsInRole("Manager"))
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Only managers can view leave types.");
+        }
+
         var leaveType = await _leaveTypeService
             .GetLeaveTypeAsync(id);
 
@@ -42,10 +60,18 @@ public class LeaveTypeController : ControllerBase
     }
 
     // POST: api/leavetypes
+    // Manager only
     [HttpPost]
     public async Task<ActionResult<LeaveTypeDto>> CreateLeaveType(
         LeaveTypeDto leaveTypeDto)
     {
+        if (!User.IsInRole("Manager"))
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Only managers can create leave types.");
+        }
+
         var leaveType = await _leaveTypeService
             .CreateLeaveTypeAsync(leaveTypeDto);
 
@@ -56,11 +82,19 @@ public class LeaveTypeController : ControllerBase
     }
 
     // PUT: api/leavetypes/1
+    // Manager only
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateLeaveType(
         int id,
         LeaveTypeDto leaveTypeDto)
     {
+        if (!User.IsInRole("Manager"))
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Only managers can update leave types.");
+        }
+
         var updated = await _leaveTypeService
             .UpdateLeaveTypeAsync(id, leaveTypeDto);
 
@@ -75,9 +109,17 @@ public class LeaveTypeController : ControllerBase
 
     // DELETE: api/leavetypes/1
     // Soft Delete / Deactivate
+    // Manager only
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeactivateLeaveType(int id)
     {
+        if (!User.IsInRole("Manager"))
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Only managers can deactivate leave types.");
+        }
+
         var deactivated = await _leaveTypeService
             .DeactivateLeaveTypeAsync(id);
 

@@ -12,68 +12,109 @@ public static class DbSeeder
         // Make sure the database is created and migrations are applied
         await context.Database.MigrateAsync();
 
-        // Do not create users if they already exist
-        if (await context.Users.AnyAsync())
+        // Seed users only if they do not already exist
+        if (!await context.Users.AnyAsync())
         {
-            return;
+            var passwordHasher = new PasswordHasher<User>();
+
+            var priya = new User
+            {
+                Username = "priya",
+                Role = "Employee",
+                EmployeeId = 1,
+                IsActive = true
+            };
+
+            priya.PasswordHash = passwordHasher.HashPassword(
+                priya,
+                "Priya@123");
+
+            var poojitha = new User
+            {
+                Username = "poojitha",
+                Role = "Employee",
+                EmployeeId = 2,
+                IsActive = true
+            };
+
+            poojitha.PasswordHash = passwordHasher.HashPassword(
+                poojitha,
+                "Poojitha@123");
+
+            var arjun = new User
+            {
+                Username = "arjun",
+                Role = "Employee",
+                EmployeeId = 3,
+                IsActive = true
+            };
+
+            arjun.PasswordHash = passwordHasher.HashPassword(
+                arjun,
+                "Arjun@123");
+
+            var sai = new User
+            {
+                Username = "sai",
+                Role = "Manager",
+                EmployeeId = 5,
+                IsActive = true
+            };
+
+            sai.PasswordHash = passwordHasher.HashPassword(
+                sai,
+                "Sai@123");
+
+            context.Users.AddRange(
+                priya,
+                poojitha,
+                arjun,
+                sai);
+
+            await context.SaveChangesAsync();
         }
 
-        var passwordHasher = new PasswordHasher<User>();
+        // Make sure all active employees have balances
+        // for all active leave types.
+        var activeEmployees = await context.Employees
+            .Where(e => e.IsActive)
+            .ToListAsync();
 
-        var priya = new User
+        var activeLeaveTypes = await context.LeaveTypes
+            .Where(l => l.IsActive)
+            .ToListAsync();
+
+        var existingBalances = await context.LeaveBalances
+            .ToListAsync();
+
+        var newBalances = new List<LeaveBalance>();
+
+        foreach (var employee in activeEmployees)
         {
-            Username = "priya",
-            Role = "Employee",
-            EmployeeId = 1,
-            IsActive = true
-        };
+            foreach (var leaveType in activeLeaveTypes)
+            {
+                var balanceExists = existingBalances.Any(b =>
+                    b.EmployeeId == employee.EmployeeId &&
+                    b.LeaveTypeId == leaveType.LeaveTypeId);
 
-        priya.PasswordHash = passwordHasher.HashPassword(
-            priya,
-            "Priya@123");
+                if (!balanceExists)
+                {
+                    newBalances.Add(new LeaveBalance
+                    {
+                        EmployeeId = employee.EmployeeId,
+                        LeaveTypeId = leaveType.LeaveTypeId,
+                        TotalDays = leaveType.MaximumDays,
+                        UsedDays = 0
+                    });
+                }
+            }
+        }
 
-        var poojitha = new User
+        if (newBalances.Any())
         {
-            Username = "poojitha",
-            Role = "Employee",
-            EmployeeId = 2,
-            IsActive = true
-        };
+            context.LeaveBalances.AddRange(newBalances);
 
-        poojitha.PasswordHash = passwordHasher.HashPassword(
-            poojitha,
-            "Poojitha@123");
-
-        var arjun = new User
-        {
-            Username = "arjun",
-            Role = "Employee",
-            EmployeeId = 3,
-            IsActive = true
-        };
-
-        arjun.PasswordHash = passwordHasher.HashPassword(
-            arjun,
-            "Arjun@123");
-
-        var sai = new User
-        {
-            Username = "sai",
-            Role = "Manager",
-            EmployeeId = 5,
-            IsActive = true
-        };
-
-        sai.PasswordHash = passwordHasher.HashPassword(
-            sai,
-            "Sai@123");
-
-        context.Users.AddRange(
-            priya,
-            poojitha,
-            arjun,
-            sai);
-
-        await context.SaveChangesAsync();
+            await context.SaveChangesAsync();
+        }
     }
 }

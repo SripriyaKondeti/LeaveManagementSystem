@@ -48,7 +48,7 @@ public class EmployeeService
     }
 
     public async Task<EmployeeDto> CreateEmployeeAsync(
-        EmployeeDto employeeDto)
+    EmployeeDto employeeDto)
     {
         var employee = new Employee
         {
@@ -63,6 +63,28 @@ public class EmployeeService
         _context.Employees.Add(employee);
 
         await _context.SaveChangesAsync();
+
+        // Create leave balances for the new employee
+        if (employee.IsActive)
+        {
+            var activeLeaveTypes = await _context.LeaveTypes
+                .Where(l => l.IsActive)
+                .ToListAsync();
+
+            var leaveBalances = activeLeaveTypes
+                .Select(leaveType => new LeaveBalance
+                {
+                    EmployeeId = employee.EmployeeId,
+                    LeaveTypeId = leaveType.LeaveTypeId,
+                    TotalDays = leaveType.MaximumDays,
+                    UsedDays = 0
+                })
+                .ToList();
+
+            _context.LeaveBalances.AddRange(leaveBalances);
+
+            await _context.SaveChangesAsync();
+        }
 
         employeeDto.EmployeeId = employee.EmployeeId;
 

@@ -45,7 +45,7 @@ public class LeaveTypeService
 
     // Create leave type
     public async Task<LeaveTypeDto> CreateLeaveTypeAsync(
-        LeaveTypeDto leaveTypeDto)
+     LeaveTypeDto leaveTypeDto)
     {
         // Validate leave type name
         if (string.IsNullOrWhiteSpace(leaveTypeDto.LeaveTypeName))
@@ -83,6 +83,28 @@ public class LeaveTypeService
         _context.LeaveTypes.Add(leaveType);
 
         await _context.SaveChangesAsync();
+
+        // Create leave balances for all active employees
+        if (leaveType.IsActive)
+        {
+            var activeEmployees = await _context.Employees
+                .Where(e => e.IsActive)
+                .ToListAsync();
+
+            var leaveBalances = activeEmployees
+                .Select(employee => new LeaveBalance
+                {
+                    EmployeeId = employee.EmployeeId,
+                    LeaveTypeId = leaveType.LeaveTypeId,
+                    TotalDays = leaveType.MaximumDays,
+                    UsedDays = 0
+                })
+                .ToList();
+
+            _context.LeaveBalances.AddRange(leaveBalances);
+
+            await _context.SaveChangesAsync();
+        }
 
         leaveTypeDto.LeaveTypeId = leaveType.LeaveTypeId;
         leaveTypeDto.LeaveTypeName = leaveType.LeaveTypeName;

@@ -24,7 +24,9 @@ namespace LeaveManagementSystem.Middleware
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Authentication failed.");
+                _logger.LogWarning(
+                    ex,
+                    "Authentication or authorization failed.");
 
                 await WriteErrorResponseAsync(
                     context,
@@ -33,7 +35,9 @@ namespace LeaveManagementSystem.Middleware
             }
             catch (KeyNotFoundException ex)
             {
-                _logger.LogWarning(ex, "Resource not found.");
+                _logger.LogWarning(
+                    ex,
+                    "Requested resource was not found.");
 
                 await WriteErrorResponseAsync(
                     context,
@@ -42,7 +46,9 @@ namespace LeaveManagementSystem.Middleware
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogWarning(ex, "Business validation failed.");
+                _logger.LogWarning(
+                    ex,
+                    "Business validation failed.");
 
                 await WriteErrorResponseAsync(
                     context,
@@ -67,6 +73,11 @@ namespace LeaveManagementSystem.Middleware
             HttpStatusCode statusCode,
             string message)
         {
+            if (context.Response.HasStarted)
+            {
+                return;
+            }
+
             context.Response.StatusCode = (int)statusCode;
             context.Response.ContentType = "application/json";
 
