@@ -34,7 +34,7 @@ public class LeaveBalanceService
         }
 
         var balances = await _context.LeaveBalances
-            .Where(b => b.EmployeeId == employeeId)
+            .Where(b => b.EmployeeId == employeeId && b.LeaveType.IsActive)
             .Select(b => new LeaveBalanceDto
             {
                 LeaveType = b.LeaveType.LeaveTypeName,

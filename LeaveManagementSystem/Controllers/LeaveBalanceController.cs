@@ -44,7 +44,7 @@ public class LeaveBalanceController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    "You don't have access to this employee's leave balance.");
+                    new { statusCode = 403, message = "You don't have access to this employee's leave balance." });
             }
         }
 

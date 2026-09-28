@@ -40,6 +40,11 @@ public class LeaveTypeController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<LeaveTypeDto>> GetLeaveType(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Leave type ID must be greater than zero." });
+        }
+
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
@@ -69,7 +74,7 @@ public class LeaveTypeController : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can create leave types.");
+                new { statusCode = 403, message = "Only managers can create leave types." });
         }
 
         var leaveType = await _leaveTypeService
@@ -88,23 +93,33 @@ public class LeaveTypeController : ControllerBase
         int id,
         LeaveTypeDto leaveTypeDto)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Leave type ID must be greater than zero." });
+        }
+
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can update leave types.");
+                new { statusCode = 403, message = "Only managers can update leave types." });
         }
 
-        var updated = await _leaveTypeService
+        var updatedLeaveType = await _leaveTypeService
             .UpdateLeaveTypeAsync(id, leaveTypeDto);
 
-        if (!updated)
+        if (updatedLeaveType == null)
         {
             return NotFound(
                 $"Leave type with ID {id} does not exist.");
         }
 
-        return NoContent();
+        return Ok(new
+        {
+            statusCode = StatusCodes.Status200OK,
+            message = "Leave type updated successfully.",
+            data = updatedLeaveType
+        });
     }
 
     // DELETE: api/leavetypes/1
@@ -113,11 +128,16 @@ public class LeaveTypeController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult<object>> DeactivateLeaveType(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Leave type ID must be greater than zero." });
+        }
+
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can deactivate leave types.");
+                new { statusCode = 403, message = "Only managers can deactivate leave types." });
         }
 
         var deactivated = await _leaveTypeService

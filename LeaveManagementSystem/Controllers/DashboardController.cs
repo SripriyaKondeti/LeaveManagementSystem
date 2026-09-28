@@ -26,7 +26,7 @@ public class DashboardController : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can access the dashboard.");
+                new { statusCode = 403, message = "Only managers can access the dashboard." });
         }
 
         var summary = await _dashboardService

@@ -103,7 +103,7 @@ public class EmployeeService
         return employeeDto;
     }
 
-    public async Task<bool> UpdateEmployeeAsync(
+    public async Task<EmployeeDto?> UpdateEmployeeAsync(
         int id,
         EmployeeDto employeeDto,
         bool canChangeActiveStatus)
@@ -112,7 +112,7 @@ public class EmployeeService
 
         if (employee == null)
         {
-            return false;
+            return null;
         }
 
         var employeeCode = employeeDto.EmployeeCode.Trim();
@@ -132,14 +132,28 @@ public class EmployeeService
         employee.Email = email;
         employee.Department = employeeDto.Department;
         employee.JoiningDate = employeeDto.JoiningDate;
+
         if (canChangeActiveStatus)
         {
             employee.IsActive = employeeDto.IsActive;
         }
+        else
+        {
+            employeeDto.IsActive = employee.IsActive;
+        }
 
         await _context.SaveChangesAsync();
 
-        return true;
+        return new EmployeeDto
+        {
+            EmployeeId = employee.EmployeeId,
+            EmployeeCode = employee.EmployeeCode,
+            Name = employee.Name,
+            Email = employee.Email,
+            Department = employee.Department,
+            JoiningDate = employee.JoiningDate,
+            IsActive = employee.IsActive
+        };
     }
 
     public async Task<bool> DeactivateEmployeeAsync(int id)
@@ -152,6 +166,16 @@ public class EmployeeService
         }
 
         employee.IsActive = false;
+
+        var employeeBalances = await _context.LeaveBalances
+            .Where(b => b.EmployeeId == id)
+            .ToListAsync();
+
+        foreach (var balance in employeeBalances)
+        {
+            balance.TotalDays = 0;
+            balance.UsedDays = 0;
+        }
 
         await _context.SaveChangesAsync();
 

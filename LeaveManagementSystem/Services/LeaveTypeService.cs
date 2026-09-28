@@ -114,7 +114,7 @@ public class LeaveTypeService
     }
 
     // Update leave type
-    public async Task<bool> UpdateLeaveTypeAsync(
+    public async Task<LeaveTypeDto?> UpdateLeaveTypeAsync(
         int id,
         LeaveTypeDto leaveTypeDto)
     {
@@ -122,7 +122,7 @@ public class LeaveTypeService
 
         if (leaveType == null)
         {
-            return false;
+            return null;
         }
 
         // Validate leave type name
@@ -158,35 +158,64 @@ public class LeaveTypeService
         leaveType.MaximumDays = leaveTypeDto.MaximumDays;
         leaveType.IsActive = leaveTypeDto.IsActive;
 
-        if (wasInactive && leaveType.IsActive)
+        var balancesForType = await _context.LeaveBalances
+            .Where(b => b.LeaveTypeId == id)
+            .ToListAsync();
+
+        if (!leaveType.IsActive)
         {
-            var activeEmployeeIds = await _context.Employees
-                .Where(e => e.IsActive)
-                .Select(e => e.EmployeeId)
-                .ToListAsync();
-
-            var existingBalanceEmployeeIds = await _context.LeaveBalances
-                .Where(b => b.LeaveTypeId == id)
-                .Select(b => b.EmployeeId)
-                .ToListAsync();
-
-            var missingBalances = activeEmployeeIds
-                .Except(existingBalanceEmployeeIds)
-                .Select(employeeId => new LeaveBalance
+            foreach (var balance in balancesForType)
+            {
+                balance.TotalDays = 0;
+                balance.UsedDays = 0;
+            }
+        }
+        else
+        {
+            foreach (var balance in balancesForType)
+            {
+                balance.TotalDays = leaveType.MaximumDays;
+                if (balance.UsedDays > leaveType.MaximumDays)
                 {
-                    EmployeeId = employeeId,
-                    LeaveTypeId = id,
-                    TotalDays = leaveType.MaximumDays,
-                    UsedDays = 0
-                })
-                .ToList();
+                    balance.UsedDays = leaveType.MaximumDays;
+                }
+            }
 
-            _context.LeaveBalances.AddRange(missingBalances);
+            if (wasInactive)
+            {
+                var activeEmployeeIds = await _context.Employees
+                    .Where(e => e.IsActive)
+                    .Select(e => e.EmployeeId)
+                    .ToListAsync();
+
+                var existingBalanceEmployeeIds = balancesForType
+                    .Select(b => b.EmployeeId)
+                    .ToList();
+
+                var missingBalances = activeEmployeeIds
+                    .Except(existingBalanceEmployeeIds)
+                    .Select(employeeId => new LeaveBalance
+                    {
+                        EmployeeId = employeeId,
+                        LeaveTypeId = id,
+                        TotalDays = leaveType.MaximumDays,
+                        UsedDays = 0
+                    })
+                    .ToList();
+
+                _context.LeaveBalances.AddRange(missingBalances);
+            }
         }
 
         await _context.SaveChangesAsync();
 
-        return true;
+        return new LeaveTypeDto
+        {
+            LeaveTypeId = leaveType.LeaveTypeId,
+            LeaveTypeName = leaveType.LeaveTypeName,
+            MaximumDays = leaveType.MaximumDays,
+            IsActive = leaveType.IsActive
+        };
     }
 
     // Deactivate leave type
@@ -200,6 +229,16 @@ public class LeaveTypeService
         }
 
         leaveType.IsActive = false;
+
+        var balancesForType = await _context.LeaveBalances
+            .Where(b => b.LeaveTypeId == id)
+            .ToListAsync();
+
+        foreach (var balance in balancesForType)
+        {
+            balance.TotalDays = 0;
+            balance.UsedDays = 0;
+        }
 
         await _context.SaveChangesAsync();
 

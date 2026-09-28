@@ -83,7 +83,7 @@ public class EmployeeController : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can create employees.");
+                new { statusCode = 403, message = "Only managers can create employees." });
         }
 
         var employee = await _employeeService
@@ -108,7 +108,9 @@ public class EmployeeController : ControllerBase
             return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
         }
 
-        if (!User.IsInRole("Manager"))
+        var isManager = User.IsInRole("Manager");
+
+        if (!isManager)
         {
             var employeeIdClaim =
                 User.FindFirst("EmployeeId")?.Value;
@@ -126,23 +128,44 @@ public class EmployeeController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    "You can update only your own employee information.");
+                    new { statusCode = 403, message = "You can update only your own employee information." });
             }
+
+            var existingEmployee = await _employeeService.GetEmployeeAsync(id);
+            if (existingEmployee == null)
+            {
+                return NotFound(
+                    $"Employee with ID {id} does not exist.");
+            }
+
+            if (employeeDto.IsActive != existingEmployee.IsActive)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    new { statusCode = 403, message = "Employees cannot change the active status. Only managers can do this." });
+            }
+
+            employeeDto.IsActive = existingEmployee.IsActive;
         }
 
-        var updated = await _employeeService
+        var updatedEmployee = await _employeeService
             .UpdateEmployeeAsync(
                 id,
                 employeeDto,
-                User.IsInRole("Manager"));
+                isManager);
 
-        if (!updated)
+        if (updatedEmployee == null)
         {
             return NotFound(
                 $"Employee with ID {id} does not exist.");
         }
 
-        return NoContent();
+        return Ok(new
+        {
+            statusCode = StatusCodes.Status200OK,
+            message = "Employee updated successfully.",
+            data = updatedEmployee
+        });
     }
     // DELETE: api/employees/1
     // Soft Delete / Deactivate
@@ -154,7 +177,7 @@ public class EmployeeController : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can deactivate employees.");
+                new { statusCode = 403, message = "Only managers can deactivate employees." });
         }
 
         var deactivated = await _employeeService

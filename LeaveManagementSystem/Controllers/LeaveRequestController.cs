@@ -32,14 +32,14 @@ public class LeaveRequestController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status401Unauthorized,
-                    "Employee information is missing from the token.");
+                    new { statusCode = 401, message = "Employee information is missing from the token." });
             }
 
             if (loggedInEmployeeId != leaveRequestDto.EmployeeId)
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    "You can create a leave request only for yourself.");
+                    new { statusCode = 403, message = "You can create a leave request only for yourself." });
             }
         }
 
@@ -80,7 +80,7 @@ public class LeaveRequestController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    "You don't have access to these leave requests.");
+                    new { statusCode = 403, message = "You don't have access to these leave requests." });
             }
 
             // Force employee filter to logged-in employee.
@@ -188,11 +188,21 @@ public class LeaveRequestController : ControllerBase
         int id,
         LeaveActionDto leaveActionDto)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Leave request ID must be greater than zero." });
+        }
+
+        if (leaveActionDto == null)
+        {
+            return BadRequest(new { statusCode = 400, message = "Approval payload is required." });
+        }
+
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can approve leave requests.");
+                new { statusCode = 403, message = "Only managers can approve leave requests." });
         }
 
         leaveActionDto.ApprovedBy = User.FindFirstValue(ClaimTypes.Name);
@@ -211,11 +221,21 @@ public class LeaveRequestController : ControllerBase
         int id,
         LeaveActionDto leaveActionDto)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Leave request ID must be greater than zero." });
+        }
+
+        if (leaveActionDto == null)
+        {
+            return BadRequest(new { statusCode = 400, message = "Rejection payload is required." });
+        }
+
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can reject leave requests.");
+                new { statusCode = 403, message = "Only managers can reject leave requests." });
         }
 
         leaveActionDto.ApprovedBy = User.FindFirstValue(ClaimTypes.Name);

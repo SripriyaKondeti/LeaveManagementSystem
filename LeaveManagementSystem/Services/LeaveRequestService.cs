@@ -19,6 +19,14 @@ public class LeaveRequestService
     public async Task<LeaveRequestDto> CreateLeaveRequestAsync(
         CreateLeaveRequestDto leaveRequestDto)
     {
+        ArgumentNullException.ThrowIfNull(leaveRequestDto);
+
+        if (string.IsNullOrWhiteSpace(leaveRequestDto.Reason))
+        {
+            throw new InvalidOperationException(
+                "Leave reason is required.");
+        }
+
         // 1. Check employee exists
         var employee = await _context.Employees
             .FirstOrDefaultAsync(e =>
@@ -56,21 +64,34 @@ public class LeaveRequestService
         }
 
         // 5. Validate dates
-        if (leaveRequestDto.FromDate > leaveRequestDto.ToDate)
+        if (leaveRequestDto.FromDate.Date > leaveRequestDto.ToDate.Date)
         {
             throw new InvalidOperationException(
                 "From date cannot be after To date.");
         }
 
-            if (leaveRequestDto.FromDate.Date < DateTime.Today)
-            {
-                throw new InvalidOperationException(
+        if (leaveRequestDto.FromDate.Date < DateTime.Today)
+        {
+            throw new InvalidOperationException(
                 "Leave cannot start before today.");
-            }
+        }
+
+        if (leaveRequestDto.ToDate.Date < DateTime.Today)
+        {
+            throw new InvalidOperationException(
+                "Leave cannot end before today.");
+        }
 
         // 6. Calculate number of days internally
-        var numberOfDays =
-            (leaveRequestDto.ToDate - leaveRequestDto.FromDate).Days + 1;
+        var numberOfDays = GetRequestedDayCount(
+            leaveRequestDto.FromDate,
+            leaveRequestDto.ToDate);
+
+        if (numberOfDays <= 0)
+        {
+            throw new InvalidOperationException(
+                "Leave duration must be at least one day.");
+        }
 
         // 7. Check leave balance
         var leaveBalance = await _context.LeaveBalances
@@ -100,8 +121,8 @@ public class LeaveRequestService
             .AnyAsync(l =>
                 l.EmployeeId == leaveRequestDto.EmployeeId &&
                 (l.Status == "Pending" || l.Status == "Approved") &&
-                leaveRequestDto.FromDate <= l.ToDate &&
-                leaveRequestDto.ToDate >= l.FromDate);
+                leaveRequestDto.FromDate.Date <= l.ToDate.Date &&
+                leaveRequestDto.ToDate.Date >= l.FromDate.Date);
 
         if (overlappingLeave)
         {
@@ -116,7 +137,7 @@ public class LeaveRequestService
             LeaveTypeId = leaveRequestDto.LeaveTypeId,
             FromDate = leaveRequestDto.FromDate,
             ToDate = leaveRequestDto.ToDate,
-            Reason = leaveRequestDto.Reason,
+            Reason = leaveRequestDto.Reason.Trim(),
 
             // Controlled by server
             Status = "Pending",
@@ -172,20 +193,22 @@ public class LeaveRequestService
 
         if (!string.IsNullOrWhiteSpace(status))
         {
+            var normalizedStatus = status.Trim();
             query = query.Where(l =>
-                l.Status == status);
+                l.Status != null &&
+                l.Status.ToLower() == normalizedStatus.ToLower());
         }
 
         if (fromDate.HasValue)
         {
             query = query.Where(l =>
-                l.FromDate >= fromDate.Value);
+                l.FromDate.Date >= fromDate.Value.Date);
         }
 
         if (toDate.HasValue)
         {
             query = query.Where(l =>
-                l.ToDate <= toDate.Value);
+                l.ToDate.Date <= toDate.Value.Date);
         }
 
         return await query
@@ -265,6 +288,12 @@ public class LeaveRequestService
         int id,
         LeaveActionDto leaveActionDto)
     {
+        if (id <= 0)
+        {
+            throw new InvalidOperationException(
+                "Leave request ID must be greater than zero.");
+        }
+
         // 1. Find leave request
         var leaveRequest = await _context.LeaveRequests
             .FindAsync(id);
@@ -290,6 +319,12 @@ public class LeaveRequestService
                 $"Cannot approve leave for inactive employee with ID {employee.EmployeeId}.");
         }
 
+        if (leaveRequest.FromDate.Date > leaveRequest.ToDate.Date)
+        {
+            throw new InvalidOperationException(
+                "Leave request contains an invalid date range.");
+        }
+
         // 2. Check current status
         if (leaveRequest.Status == "Approved")
         {
@@ -303,9 +338,17 @@ public class LeaveRequestService
                 "Leave request is already rejected.");
         }
 
+        if (string.IsNullOrWhiteSpace(leaveRequest.Status) ||
+            !string.Equals(leaveRequest.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ConflictException(
+                "Only pending leave requests can be approved.");
+        }
+
         // 3. Calculate number of days
-        var numberOfDays =
-            (leaveRequest.ToDate - leaveRequest.FromDate).Days + 1;
+        var numberOfDays = GetRequestedDayCount(
+            leaveRequest.FromDate,
+            leaveRequest.ToDate);
 
         // 4. Find leave balance
         var leaveBalance = await _context.LeaveBalances
@@ -353,6 +396,12 @@ public class LeaveRequestService
         int id,
         LeaveActionDto leaveActionDto)
     {
+        if (id <= 0)
+        {
+            throw new InvalidOperationException(
+                "Leave request ID must be greater than zero.");
+        }
+
         // 1. Find leave request
         var leaveRequest = await _context.LeaveRequests
             .FindAsync(id);
@@ -391,6 +440,13 @@ public class LeaveRequestService
                 "Leave request is already approved.");
         }
 
+        if (string.IsNullOrWhiteSpace(leaveRequest.Status) ||
+            !string.Equals(leaveRequest.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ConflictException(
+                "Only pending leave requests can be rejected.");
+        }
+
         // 3. Reject request
         leaveRequest.Status = "Rejected";
 
@@ -405,5 +461,10 @@ public class LeaveRequestService
         await _context.SaveChangesAsync();
 
         return (await GetLeaveRequestAsync(id))!;
+    }
+
+    private static int GetRequestedDayCount(DateTime fromDate, DateTime toDate)
+    {
+        return (toDate.Date - fromDate.Date).Days + 1;
     }
 }
