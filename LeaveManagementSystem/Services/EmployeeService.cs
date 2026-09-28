@@ -105,7 +105,8 @@ public class EmployeeService
 
     public async Task<bool> UpdateEmployeeAsync(
         int id,
-        EmployeeDto employeeDto)
+        EmployeeDto employeeDto,
+        bool canChangeActiveStatus)
     {
         var employee = await _context.Employees.FindAsync(id);
 
@@ -131,7 +132,10 @@ public class EmployeeService
         employee.Email = email;
         employee.Department = employeeDto.Department;
         employee.JoiningDate = employeeDto.JoiningDate;
-        employee.IsActive = employeeDto.IsActive;
+        if (canChangeActiveStatus)
+        {
+            employee.IsActive = employeeDto.IsActive;
+        }
 
         await _context.SaveChangesAsync();
 

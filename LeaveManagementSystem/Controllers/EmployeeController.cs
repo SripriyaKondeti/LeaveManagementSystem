@@ -131,7 +131,10 @@ public class EmployeeController : ControllerBase
         }
 
         var updated = await _employeeService
-            .UpdateEmployeeAsync(id, employeeDto);
+            .UpdateEmployeeAsync(
+                id,
+                employeeDto,
+                User.IsInRole("Manager"));
 
         if (!updated)
         {

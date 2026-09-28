@@ -152,9 +152,37 @@ public class LeaveTypeService
                 $"Leave type '{leaveTypeDto.LeaveTypeName.Trim()}' already exists.");
         }
 
+        var wasInactive = !leaveType.IsActive;
+
         leaveType.LeaveTypeName = leaveTypeDto.LeaveTypeName.Trim();
         leaveType.MaximumDays = leaveTypeDto.MaximumDays;
         leaveType.IsActive = leaveTypeDto.IsActive;
+
+        if (wasInactive && leaveType.IsActive)
+        {
+            var activeEmployeeIds = await _context.Employees
+                .Where(e => e.IsActive)
+                .Select(e => e.EmployeeId)
+                .ToListAsync();
+
+            var existingBalanceEmployeeIds = await _context.LeaveBalances
+                .Where(b => b.LeaveTypeId == id)
+                .Select(b => b.EmployeeId)
+                .ToListAsync();
+
+            var missingBalances = activeEmployeeIds
+                .Except(existingBalanceEmployeeIds)
+                .Select(employeeId => new LeaveBalance
+                {
+                    EmployeeId = employeeId,
+                    LeaveTypeId = id,
+                    TotalDays = leaveType.MaximumDays,
+                    UsedDays = 0
+                })
+                .ToList();
+
+            _context.LeaveBalances.AddRange(missingBalances);
+        }
 
         await _context.SaveChangesAsync();
 
