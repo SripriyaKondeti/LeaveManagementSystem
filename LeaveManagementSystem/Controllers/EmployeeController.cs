@@ -40,33 +40,34 @@ public class EmployeeController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<EmployeeDto>> GetEmployee(int id)
     {
-        var employee = await _employeeService.GetEmployeeAsync(id);
-
-        if (employee == null)
+        if (id <= 0)
         {
-            return NotFound(
-                $"Employee with ID {id} does not exist.");
+            return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
         }
 
         if (!User.IsInRole("Manager"))
         {
             var employeeIdClaim = User.FindFirst("EmployeeId")?.Value;
 
-            if (!int.TryParse(
-                    employeeIdClaim,
-                    out var loggedInEmployeeId))
+            if (!int.TryParse(employeeIdClaim, out var loggedInEmployeeId))
             {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    "Employee information is missing from the token.");
+                return StatusCode(StatusCodes.Status401Unauthorized,
+                    new { statusCode = 401, message = "Employee information is missing from the token." });
             }
 
             if (loggedInEmployeeId != id)
             {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    "You don't have access to this employee.");
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { statusCode = 403, message = "You don't have access to this employee." });
             }
+        }
+
+        var employee = await _employeeService.GetEmployeeAsync(id);
+
+        if (employee == null)
+        {
+            return NotFound(
+                $"Employee with ID {id} does not exist.");
         }
 
         return Ok(employee);
@@ -94,18 +95,39 @@ public class EmployeeController : ControllerBase
             employee);
     }
 
-    // PUT: api/employees/1
-    // Manager only
+    // PUT: api/employees/{id}
+    // Manager can update any employee.
+    // Employee can update only themselves.
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateEmployee(
         int id,
         EmployeeDto employeeDto)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
+        }
+
         if (!User.IsInRole("Manager"))
         {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                "Only managers can update employees.");
+            var employeeIdClaim =
+                User.FindFirst("EmployeeId")?.Value;
+
+            if (!int.TryParse(
+                    employeeIdClaim,
+                    out var loggedInEmployeeId))
+            {
+                return StatusCode(
+                    StatusCodes.Status401Unauthorized,
+                    new { statusCode = 401, message = "Employee information is missing from the token." });
+            }
+
+            if (loggedInEmployeeId != id)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "You can update only your own employee information.");
+            }
         }
 
         var updated = await _employeeService
@@ -119,12 +141,11 @@ public class EmployeeController : ControllerBase
 
         return NoContent();
     }
-
     // DELETE: api/employees/1
     // Soft Delete / Deactivate
     // Manager only
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeactivateEmployee(int id)
+    public async Task<ActionResult<object>> DeactivateEmployee(int id)
     {
         if (!User.IsInRole("Manager"))
         {
@@ -138,10 +159,17 @@ public class EmployeeController : ControllerBase
 
         if (!deactivated)
         {
-            return NotFound(
-                $"Employee with ID {id} does not exist.");
+            return NotFound(new
+            {
+                statusCode = StatusCodes.Status404NotFound,
+                message = $"Employee with ID {id} does not exist."
+            });
         }
 
-        return NoContent();
+        return Ok(new
+        {
+            statusCode = StatusCodes.Status200OK,
+            message = $"Employee with ID {id} was deactivated successfully."
+        });
     }
 }

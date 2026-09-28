@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using LeaveManagementSystem.DTOs;
 using LeaveManagementSystem.Services;
+using System.Security.Claims;
 
 namespace LeaveManagementSystem.Controllers;
 
@@ -27,14 +28,10 @@ public class LeaveRequestController : ControllerBase
     {
         if (!User.IsInRole("Manager"))
         {
-            var employeeIdClaim = User.FindFirst("EmployeeId")?.Value;
-
-            if (!int.TryParse(
-                    employeeIdClaim,
-                    out var loggedInEmployeeId))
+            if (!TryGetLoggedInEmployeeId(out var loggedInEmployeeId))
             {
                 return StatusCode(
-                    StatusCodes.Status403Forbidden,
+                    StatusCodes.Status401Unauthorized,
                     "Employee information is missing from the token.");
             }
 
@@ -70,18 +67,14 @@ public class LeaveRequestController : ControllerBase
     {
         if (!User.IsInRole("Manager"))
         {
-            var employeeIdClaim = User.FindFirst("EmployeeId")?.Value;
-
-            if (!int.TryParse(
-                    employeeIdClaim,
-                    out var loggedInEmployeeId))
+            if (!TryGetLoggedInEmployeeId(out var loggedInEmployeeId))
             {
                 return StatusCode(
-                    StatusCodes.Status403Forbidden,
+                    StatusCodes.Status401Unauthorized,
                     "Employee information is missing from the token.");
             }
 
-            // Employee cannot request another employee's data
+            // Employee cannot request another employee's data.
             if (employeeId.HasValue &&
                 employeeId.Value != loggedInEmployeeId)
             {
@@ -90,7 +83,7 @@ public class LeaveRequestController : ControllerBase
                     "You don't have access to these leave requests.");
             }
 
-            // Force the filter to the logged-in employee
+            // Force employee filter to logged-in employee.
             employeeId = loggedInEmployeeId;
         }
 
@@ -106,13 +99,26 @@ public class LeaveRequestController : ControllerBase
     }
 
 
-    // GET: api/leaves/1
+    // GET: api/leaves/{id}
     // Manager can view any request.
     // Employee can view only their own request.
     [HttpGet("{id}")]
     public async Task<ActionResult<LeaveRequestDto>>
         GetLeaveRequest(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Leave request ID must be greater than zero." });
+        }
+
+        var loggedInEmployeeId = 0;
+
+        if (!User.IsInRole("Manager") && !TryGetLoggedInEmployeeId(out loggedInEmployeeId))
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized,
+                new { statusCode = 401, message = "Employee information is missing from the token." });
+        }
+
         var leaveRequest = await _leaveRequestService
             .GetLeaveRequestAsync(id);
 
@@ -124,22 +130,11 @@ public class LeaveRequestController : ControllerBase
 
         if (!User.IsInRole("Manager"))
         {
-            var employeeIdClaim = User.FindFirst("EmployeeId")?.Value;
-
-            if (!int.TryParse(
-                    employeeIdClaim,
-                    out var loggedInEmployeeId))
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    "Employee information is missing from the token.");
-            }
-
             if (leaveRequest.EmployeeId != loggedInEmployeeId)
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    "You don't have access to this leave request.");
+                    new { statusCode = 403, message = "You don't have access to this leave request." });
             }
         }
 
@@ -147,13 +142,32 @@ public class LeaveRequestController : ControllerBase
     }
 
 
-    // GET: api/employees/1/leaves
+    // GET: /api/employees/{employeeId}/leaves
     // Manager can view any employee's history.
     // Employee can view only their own history.
     [HttpGet("/api/employees/{employeeId}/leaves")]
     public async Task<ActionResult<IEnumerable<LeaveRequestDto>>>
         GetEmployeeLeaves(int employeeId)
     {
+        if (employeeId <= 0)
+        {
+            return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
+        }
+
+        var loggedInEmployeeId = 0;
+
+        if (!User.IsInRole("Manager") && !TryGetLoggedInEmployeeId(out loggedInEmployeeId))
+        {
+            return StatusCode(StatusCodes.Status401Unauthorized,
+                new { statusCode = 401, message = "Employee information is missing from the token." });
+        }
+
+        if (!User.IsInRole("Manager") && loggedInEmployeeId != employeeId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { statusCode = 403, message = "You don't have access to this employee's leave history." });
+        }
+
         var leaveRequests = await _leaveRequestService
             .GetEmployeeLeavesAsync(employeeId);
 
@@ -163,35 +177,14 @@ public class LeaveRequestController : ControllerBase
                 $"Employee with ID {employeeId} does not exist.");
         }
 
-        if (!User.IsInRole("Manager"))
-        {
-            var employeeIdClaim = User.FindFirst("EmployeeId")?.Value;
-
-            if (!int.TryParse(
-                    employeeIdClaim,
-                    out var loggedInEmployeeId))
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    "Employee information is missing from the token.");
-            }
-
-            if (loggedInEmployeeId != employeeId)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    "You don't have access to this employee's leave history.");
-            }
-        }
-
         return Ok(leaveRequests);
     }
 
 
-    // PUT: api/leaves/1/approve
-    // Manager only
+    // PUT: api/leaves/{id}/approve
+    // Manager only.
     [HttpPut("{id}/approve")]
-    public async Task<IActionResult> ApproveLeaveRequest(
+    public async Task<ActionResult<LeaveRequestDto>> ApproveLeaveRequest(
         int id,
         LeaveActionDto leaveActionDto)
     {
@@ -202,17 +195,19 @@ public class LeaveRequestController : ControllerBase
                 "Only managers can approve leave requests.");
         }
 
-        await _leaveRequestService
+        leaveActionDto.ApprovedBy = User.FindFirstValue(ClaimTypes.Name);
+
+        var result = await _leaveRequestService
             .ApproveLeaveRequestAsync(id, leaveActionDto);
 
-        return NoContent();
+        return Ok(result);
     }
 
 
-    // PUT: api/leaves/1/reject
-    // Manager only
+    // PUT: api/leaves/{id}/reject
+    // Manager only.
     [HttpPut("{id}/reject")]
-    public async Task<IActionResult> RejectLeaveRequest(
+    public async Task<ActionResult<LeaveRequestDto>> RejectLeaveRequest(
         int id,
         LeaveActionDto leaveActionDto)
     {
@@ -223,9 +218,27 @@ public class LeaveRequestController : ControllerBase
                 "Only managers can reject leave requests.");
         }
 
-        await _leaveRequestService
+        leaveActionDto.ApprovedBy = User.FindFirstValue(ClaimTypes.Name);
+
+        var result = await _leaveRequestService
             .RejectLeaveRequestAsync(id, leaveActionDto);
 
-        return NoContent();
+        return Ok(result);
+    }
+
+
+    // Helper method
+    // Gets EmployeeId from the JWT token.
+    private bool TryGetLoggedInEmployeeId(
+        out int employeeId)
+    {
+        employeeId = 0;
+
+        var employeeIdClaim =
+            User.FindFirst("EmployeeId")?.Value;
+
+        return int.TryParse(
+            employeeIdClaim,
+            out employeeId);
     }
 }

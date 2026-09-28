@@ -1,6 +1,7 @@
 ﻿using LeaveManagementSystem.Data;
 using LeaveManagementSystem.DTOs;
 using LeaveManagementSystem.Models;
+using LeaveManagementSystem.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagementSystem.Services;
@@ -32,7 +33,7 @@ public class LeaveRequestService
         // 2. Check employee is active
         if (!employee.IsActive)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 $"Employee with ID {leaveRequestDto.EmployeeId} is not active.");
         }
 
@@ -60,6 +61,12 @@ public class LeaveRequestService
             throw new InvalidOperationException(
                 "From date cannot be after To date.");
         }
+
+            if (leaveRequestDto.FromDate.Date < DateTime.Today)
+            {
+                throw new InvalidOperationException(
+                "Leave cannot start before today.");
+            }
 
         // 6. Calculate number of days internally
         var numberOfDays =
@@ -92,13 +99,13 @@ public class LeaveRequestService
         var overlappingLeave = await _context.LeaveRequests
             .AnyAsync(l =>
                 l.EmployeeId == leaveRequestDto.EmployeeId &&
-                l.Status != "Rejected" &&
+                (l.Status == "Pending" || l.Status == "Approved") &&
                 leaveRequestDto.FromDate <= l.ToDate &&
                 leaveRequestDto.ToDate >= l.FromDate);
 
         if (overlappingLeave)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "The requested leave dates overlap with an existing leave request.");
         }
 
@@ -254,7 +261,7 @@ public class LeaveRequestService
 
 
     // Approve leave request
-    public async Task ApproveLeaveRequestAsync(
+    public async Task<LeaveRequestDto> ApproveLeaveRequestAsync(
         int id,
         LeaveActionDto leaveActionDto)
     {
@@ -268,16 +275,31 @@ public class LeaveRequestService
                 $"Leave request with ID {id} does not exist.");
         }
 
+        var employee = await _context.Employees
+            .FirstOrDefaultAsync(e => e.EmployeeId == leaveRequest.EmployeeId);
+
+        if (employee == null)
+        {
+            throw new KeyNotFoundException(
+                $"Employee with ID {leaveRequest.EmployeeId} does not exist.");
+        }
+
+        if (!employee.IsActive)
+        {
+            throw new ConflictException(
+                $"Cannot approve leave for inactive employee with ID {employee.EmployeeId}.");
+        }
+
         // 2. Check current status
         if (leaveRequest.Status == "Approved")
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Leave request is already approved.");
         }
 
         if (leaveRequest.Status == "Rejected")
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Leave request is already rejected.");
         }
 
@@ -321,11 +343,13 @@ public class LeaveRequestService
         leaveBalance.UsedDays += numberOfDays;
 
         await _context.SaveChangesAsync();
+
+        return (await GetLeaveRequestAsync(id))!;
     }
 
 
     // Reject leave request
-    public async Task RejectLeaveRequestAsync(
+    public async Task<LeaveRequestDto> RejectLeaveRequestAsync(
         int id,
         LeaveActionDto leaveActionDto)
     {
@@ -339,16 +363,31 @@ public class LeaveRequestService
                 $"Leave request with ID {id} does not exist.");
         }
 
+        var employee = await _context.Employees
+            .FirstOrDefaultAsync(e => e.EmployeeId == leaveRequest.EmployeeId);
+
+        if (employee == null)
+        {
+            throw new KeyNotFoundException(
+                $"Employee with ID {leaveRequest.EmployeeId} does not exist.");
+        }
+
+        if (!employee.IsActive)
+        {
+            throw new ConflictException(
+                $"Cannot reject leave for inactive employee with ID {employee.EmployeeId}.");
+        }
+
         // 2. Check current status
         if (leaveRequest.Status == "Rejected")
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Leave request is already rejected.");
         }
 
         if (leaveRequest.Status == "Approved")
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Leave request is already approved.");
         }
 
@@ -364,5 +403,7 @@ public class LeaveRequestService
         // Balance is NOT updated for rejected leave
 
         await _context.SaveChangesAsync();
+
+        return (await GetLeaveRequestAsync(id))!;
     }
 }

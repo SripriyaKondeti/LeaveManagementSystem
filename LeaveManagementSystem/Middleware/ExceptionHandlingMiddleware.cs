@@ -44,6 +44,15 @@ namespace LeaveManagementSystem.Middleware
                     HttpStatusCode.NotFound,
                     ex.Message);
             }
+                    catch (ConflictException ex)
+                    {
+                    _logger.LogWarning(ex, "Request conflicts with the current resource state.");
+
+                    await WriteErrorResponseAsync(
+                        context,
+                        HttpStatusCode.Conflict,
+                        ex.Message);
+                    }
             catch (InvalidOperationException ex)
             {
                 _logger.LogWarning(
@@ -84,7 +93,8 @@ namespace LeaveManagementSystem.Middleware
             var response = new
             {
                 statusCode = (int)statusCode,
-                message = message
+                message,
+                traceId = context.TraceIdentifier
             };
 
             await context.Response.WriteAsync(

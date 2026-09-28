@@ -1,5 +1,6 @@
 ﻿using LeaveManagementSystem.Data;
 using LeaveManagementSystem.DTOs;
+using LeaveManagementSystem.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagementSystem.Services;
@@ -28,7 +29,7 @@ public class LeaveBalanceService
         // Check employee is active
         if (!employee.IsActive)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 $"Employee with ID {employeeId} is inactive.");
         }
 

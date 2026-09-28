@@ -1,6 +1,7 @@
 ﻿using LeaveManagementSystem.Data;
 using LeaveManagementSystem.DTOs;
 using LeaveManagementSystem.Models;
+using LeaveManagementSystem.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagementSystem.Services;
@@ -69,7 +70,7 @@ public class LeaveTypeService
 
         if (nameExists)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 $"Leave type '{leaveTypeDto.LeaveTypeName.Trim()}' already exists.");
         }
 
@@ -147,7 +148,7 @@ public class LeaveTypeService
 
         if (nameExists)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 $"Leave type '{leaveTypeDto.LeaveTypeName.Trim()}' already exists.");
         }
 

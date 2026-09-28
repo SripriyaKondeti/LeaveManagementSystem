@@ -12,6 +12,9 @@ namespace LeaveManagementSystem.Services;
 
 public class AuthService
 {
+    private static readonly string DummyPasswordHash =
+        new PasswordHasher<User>().HashPassword(new User(), "invalid-password");
+
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly PasswordHasher<User> _passwordHasher;
@@ -46,27 +49,15 @@ public class AuthService
             .FirstOrDefaultAsync(u =>
                 u.Username == loginDto.Username.Trim());
 
-        // Do not reveal whether username exists
-        if (user == null)
-        {
-            throw new UnauthorizedAccessException(
-                "Invalid username or password.");
-        }
-
-        // Check user is active
-        if (!user.IsActive)
-        {
-            throw new UnauthorizedAccessException(
-                "User account is inactive.");
-        }
-
         // Verify password
         var passwordResult = _passwordHasher.VerifyHashedPassword(
-            user,
-            user.PasswordHash,
+            user ?? new User(),
+            user?.PasswordHash ?? DummyPasswordHash,
             loginDto.Password);
 
-        if (passwordResult == PasswordVerificationResult.Failed)
+        if (user == null ||
+            !user.IsActive ||
+            passwordResult == PasswordVerificationResult.Failed)
         {
             throw new UnauthorizedAccessException(
                 "Invalid username or password.");

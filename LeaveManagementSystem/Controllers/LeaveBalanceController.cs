@@ -23,17 +23,11 @@ public class LeaveBalanceController : ControllerBase
     public async Task<ActionResult<IEnumerable<LeaveBalanceDto>>> GetLeaveBalance(
     int employeeId)
     {
-        // First check whether the requested employee exists
-        var balances = await _leaveBalanceService
-            .GetLeaveBalanceAsync(employeeId);
-
-        if (balances == null)
+        if (employeeId <= 0)
         {
-            return NotFound(
-                $"Employee with ID {employeeId} does not exist.");
+            return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
         }
 
-        // Managers can view any employee's leave balance
         if (!User.IsInRole("Manager"))
         {
             var employeeIdClaim = User.FindFirst("EmployeeId")?.Value;
@@ -41,8 +35,8 @@ public class LeaveBalanceController : ControllerBase
             if (!int.TryParse(employeeIdClaim, out var loggedInEmployeeId))
             {
                 return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    "Employee information is missing from the token.");
+                    StatusCodes.Status401Unauthorized,
+                    new { statusCode = 401, message = "Employee information is missing from the token." });
             }
 
             // Employees can view only their own balance
@@ -52,6 +46,13 @@ public class LeaveBalanceController : ControllerBase
                     StatusCodes.Status403Forbidden,
                     "You don't have access to this employee's leave balance.");
             }
+        }
+
+        var balances = await _leaveBalanceService.GetLeaveBalanceAsync(employeeId);
+
+        if (balances == null)
+        {
+            return NotFound(new { statusCode = 404, message = $"Employee with ID {employeeId} does not exist." });
         }
 
         return Ok(balances);

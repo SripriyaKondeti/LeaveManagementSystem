@@ -1,6 +1,7 @@
 ﻿using LeaveManagementSystem.Data;
 using LeaveManagementSystem.DTOs;
 using LeaveManagementSystem.Models;
+using LeaveManagementSystem.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagementSystem.Services;
@@ -50,11 +51,22 @@ public class EmployeeService
     public async Task<EmployeeDto> CreateEmployeeAsync(
     EmployeeDto employeeDto)
     {
+        var employeeCode = employeeDto.EmployeeCode.Trim();
+        var email = employeeDto.Email.Trim();
+
+        if (await _context.Employees.AnyAsync(e =>
+                e.EmployeeCode == employeeCode ||
+                e.Email.ToLower() == email.ToLower()))
+        {
+            throw new ConflictException(
+                "An employee with the same code or email already exists.");
+        }
+
         var employee = new Employee
         {
-            EmployeeCode = employeeDto.EmployeeCode,
+            EmployeeCode = employeeCode,
             Name = employeeDto.Name,
-            Email = employeeDto.Email,
+            Email = email,
             Department = employeeDto.Department,
             JoiningDate = employeeDto.JoiningDate,
             IsActive = employeeDto.IsActive
@@ -102,9 +114,21 @@ public class EmployeeService
             return false;
         }
 
-        employee.EmployeeCode = employeeDto.EmployeeCode;
+        var employeeCode = employeeDto.EmployeeCode.Trim();
+        var email = employeeDto.Email.Trim();
+
+        if (await _context.Employees.AnyAsync(e =>
+                e.EmployeeId != id &&
+                (e.EmployeeCode == employeeCode ||
+                 e.Email.ToLower() == email.ToLower())))
+        {
+            throw new ConflictException(
+                "An employee with the same code or email already exists.");
+        }
+
+        employee.EmployeeCode = employeeCode;
         employee.Name = employeeDto.Name;
-        employee.Email = employeeDto.Email;
+        employee.Email = email;
         employee.Department = employeeDto.Department;
         employee.JoiningDate = employeeDto.JoiningDate;
         employee.IsActive = employeeDto.IsActive;

@@ -111,7 +111,7 @@ public class LeaveTypeController : ControllerBase
     // Soft Delete / Deactivate
     // Manager only
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeactivateLeaveType(int id)
+    public async Task<ActionResult<object>> DeactivateLeaveType(int id)
     {
         if (!User.IsInRole("Manager"))
         {
@@ -125,10 +125,17 @@ public class LeaveTypeController : ControllerBase
 
         if (!deactivated)
         {
-            return NotFound(
-                $"Leave type with ID {id} does not exist.");
+            return NotFound(new
+            {
+                statusCode = StatusCodes.Status404NotFound,
+                message = $"Leave type with ID {id} does not exist."
+            });
         }
 
-        return NoContent();
+        return Ok(new
+        {
+            statusCode = StatusCodes.Status200OK,
+            message = $"Leave type with ID {id} was deactivated successfully."
+        });
     }
 }
