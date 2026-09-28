@@ -20,29 +20,29 @@ public class EmployeeController : ControllerBase
     // GET: api/employees
     // Manager only
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetEmployees()
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<EmployeeDto>>>> GetEmployees()
     {
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can view all employees.");
+                ApiResponseDto<object>.Failure(StatusCodes.Status403Forbidden, "Only managers can view all employees."));
         }
 
         var employees = await _employeeService.GetEmployeesAsync();
 
-        return Ok(employees);
+        return Ok(ApiResponseDto<IEnumerable<EmployeeDto>>.Success(StatusCodes.Status200OK, "Employees retrieved successfully.", employees));
     }
 
     // GET: api/employees/1
     // Employee can view only themselves.
     // Manager can view anyone.
     [HttpGet("{id}")]
-    public async Task<ActionResult<EmployeeDto>> GetEmployee(int id)
+    public async Task<ActionResult<ApiResponseDto<EmployeeDto>>> GetEmployee(int id)
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Employee ID must be greater than zero."));
         }
 
         if (!User.IsInRole("Manager"))
@@ -52,13 +52,13 @@ public class EmployeeController : ControllerBase
             if (!int.TryParse(employeeIdClaim, out var loggedInEmployeeId))
             {
                 return StatusCode(StatusCodes.Status401Unauthorized,
-                    new { statusCode = 401, message = "Employee information is missing from the token." });
+                    ApiResponseDto<object>.Failure(401, "Employee information is missing from the token."));
             }
 
             if (loggedInEmployeeId != id)
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
-                    new { statusCode = 403, message = "You don't have access to this employee." });
+                    ApiResponseDto<object>.Failure(403, "You don't have access to this employee."));
             }
         }
 
@@ -66,24 +66,23 @@ public class EmployeeController : ControllerBase
 
         if (employee == null)
         {
-            return NotFound(
-                $"Employee with ID {id} does not exist.");
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Employee with ID {id} does not exist."));
         }
 
-        return Ok(employee);
+        return Ok(ApiResponseDto<EmployeeDto>.Success(200, "Employee retrieved successfully.", employee));
     }
 
     // POST: api/employees
     // Manager only
     [HttpPost]
-    public async Task<ActionResult<EmployeeDto>> CreateEmployee(
+    public async Task<ActionResult<ApiResponseDto<EmployeeDto>>> CreateEmployee(
         EmployeeDto employeeDto)
     {
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can create employees." });
+                ApiResponseDto<object>.Failure(403, "Only managers can create employees."));
         }
 
         var employee = await _employeeService
@@ -92,7 +91,7 @@ public class EmployeeController : ControllerBase
         return CreatedAtAction(
             nameof(GetEmployee),
             new { id = employee.EmployeeId },
-            employee);
+            ApiResponseDto<EmployeeDto>.Success(201, "Employee created successfully.", employee));
     }
 
     // PUT: api/employees/{id}
@@ -105,7 +104,7 @@ public class EmployeeController : ControllerBase
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Employee ID must be greater than zero."));
         }
 
         var isManager = User.IsInRole("Manager");
@@ -121,28 +120,27 @@ public class EmployeeController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status401Unauthorized,
-                    new { statusCode = 401, message = "Employee information is missing from the token." });
+                    ApiResponseDto<object>.Failure(401, "Employee information is missing from the token."));
             }
 
             if (loggedInEmployeeId != id)
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    new { statusCode = 403, message = "You can update only your own employee information." });
+                    ApiResponseDto<object>.Failure(403, "You can update only your own employee information."));
             }
 
             var existingEmployee = await _employeeService.GetEmployeeAsync(id);
             if (existingEmployee == null)
             {
-                return NotFound(
-                    $"Employee with ID {id} does not exist.");
+                return NotFound(ApiResponseDto<object>.Failure(404, $"Employee with ID {id} does not exist."));
             }
 
             if (employeeDto.IsActive != existingEmployee.IsActive)
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    new { statusCode = 403, message = "Employees cannot change the active status. Only managers can do this." });
+                    ApiResponseDto<object>.Failure(403, "Employees cannot change the active status. Only managers can do this."));
             }
 
             employeeDto.IsActive = existingEmployee.IsActive;
@@ -156,16 +154,10 @@ public class EmployeeController : ControllerBase
 
         if (updatedEmployee == null)
         {
-            return NotFound(
-                $"Employee with ID {id} does not exist.");
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Employee with ID {id} does not exist."));
         }
 
-        return Ok(new
-        {
-            statusCode = StatusCodes.Status200OK,
-            message = "Employee updated successfully.",
-            data = updatedEmployee
-        });
+        return Ok(ApiResponseDto<EmployeeDto>.Success(200, "Employee updated successfully.", updatedEmployee));
     }
     // DELETE: api/employees/1
     // Soft Delete / Deactivate
@@ -177,7 +169,7 @@ public class EmployeeController : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can deactivate employees." });
+                ApiResponseDto<object>.Failure(403, "Only managers can deactivate employees."));
         }
 
         var deactivated = await _employeeService
@@ -185,17 +177,9 @@ public class EmployeeController : ControllerBase
 
         if (!deactivated)
         {
-            return NotFound(new
-            {
-                statusCode = StatusCodes.Status404NotFound,
-                message = $"Employee with ID {id} does not exist."
-            });
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Employee with ID {id} does not exist."));
         }
 
-        return Ok(new
-        {
-            statusCode = StatusCodes.Status200OK,
-            message = $"Employee with ID {id} was deactivated successfully."
-        });
+        return Ok(ApiResponseDto<object>.Success(200, $"Employee with ID {id} was deactivated successfully.", null));
     }
 }

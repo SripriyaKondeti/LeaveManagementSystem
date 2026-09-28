@@ -20,36 +20,36 @@ public class LeaveTypeController : ControllerBase
     // GET: api/leavetypes
     // Manager only
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LeaveTypeDto>>> GetLeaveTypes()
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes()
     {
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can view leave types.");
+                ApiResponseDto<object>.Failure(403, "Only managers can view leave types."));
         }
 
         var leaveTypes = await _leaveTypeService
             .GetLeaveTypesAsync();
 
-        return Ok(leaveTypes);
+        return Ok(ApiResponseDto<IEnumerable<LeaveTypeDto>>.Success(200, "Leave types retrieved successfully.", leaveTypes));
     }
 
     // GET: api/leavetypes/1
     // Manager only
     [HttpGet("{id}")]
-    public async Task<ActionResult<LeaveTypeDto>> GetLeaveType(int id)
+    public async Task<ActionResult<ApiResponseDto<LeaveTypeDto>>> GetLeaveType(int id)
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Leave type ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Leave type ID must be greater than zero."));
         }
 
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                "Only managers can view leave types.");
+                ApiResponseDto<object>.Failure(403, "Only managers can view leave types."));
         }
 
         var leaveType = await _leaveTypeService
@@ -57,24 +57,23 @@ public class LeaveTypeController : ControllerBase
 
         if (leaveType == null)
         {
-            return NotFound(
-                $"Leave type with ID {id} does not exist.");
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Leave type with ID {id} does not exist."));
         }
 
-        return Ok(leaveType);
+        return Ok(ApiResponseDto<LeaveTypeDto>.Success(200, "Leave type retrieved successfully.", leaveType));
     }
 
     // POST: api/leavetypes
     // Manager only
     [HttpPost]
-    public async Task<ActionResult<LeaveTypeDto>> CreateLeaveType(
+    public async Task<ActionResult<ApiResponseDto<LeaveTypeDto>>> CreateLeaveType(
         LeaveTypeDto leaveTypeDto)
     {
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can create leave types." });
+                ApiResponseDto<object>.Failure(403, "Only managers can create leave types."));
         }
 
         var leaveType = await _leaveTypeService
@@ -83,7 +82,7 @@ public class LeaveTypeController : ControllerBase
         return CreatedAtAction(
             nameof(GetLeaveType),
             new { id = leaveType.LeaveTypeId },
-            leaveType);
+            ApiResponseDto<LeaveTypeDto>.Success(201, "Leave type created successfully.", leaveType));
     }
 
     // PUT: api/leavetypes/1
@@ -95,14 +94,14 @@ public class LeaveTypeController : ControllerBase
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Leave type ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Leave type ID must be greater than zero."));
         }
 
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can update leave types." });
+                ApiResponseDto<object>.Failure(403, "Only managers can update leave types."));
         }
 
         var updatedLeaveType = await _leaveTypeService
@@ -110,16 +109,10 @@ public class LeaveTypeController : ControllerBase
 
         if (updatedLeaveType == null)
         {
-            return NotFound(
-                $"Leave type with ID {id} does not exist.");
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Leave type with ID {id} does not exist."));
         }
 
-        return Ok(new
-        {
-            statusCode = StatusCodes.Status200OK,
-            message = "Leave type updated successfully.",
-            data = updatedLeaveType
-        });
+        return Ok(ApiResponseDto<LeaveTypeDto>.Success(200, "Leave type updated successfully.", updatedLeaveType));
     }
 
     // DELETE: api/leavetypes/1
@@ -130,14 +123,14 @@ public class LeaveTypeController : ControllerBase
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Leave type ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Leave type ID must be greater than zero."));
         }
 
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can deactivate leave types." });
+                ApiResponseDto<object>.Failure(403, "Only managers can deactivate leave types."));
         }
 
         var deactivated = await _leaveTypeService
@@ -145,17 +138,9 @@ public class LeaveTypeController : ControllerBase
 
         if (!deactivated)
         {
-            return NotFound(new
-            {
-                statusCode = StatusCodes.Status404NotFound,
-                message = $"Leave type with ID {id} does not exist."
-            });
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Leave type with ID {id} does not exist."));
         }
 
-        return Ok(new
-        {
-            statusCode = StatusCodes.Status200OK,
-            message = $"Leave type with ID {id} was deactivated successfully."
-        });
+        return Ok(ApiResponseDto<object>.Success(200, $"Leave type with ID {id} was deactivated successfully.", null));
     }
 }

@@ -90,15 +90,15 @@ namespace LeaveManagementSystem.Middleware
             context.Response.StatusCode = (int)statusCode;
             context.Response.ContentType = "application/json";
 
-            var response = new
-            {
-                statusCode = (int)statusCode,
+            var response = LeaveManagementSystem.DTOs.ApiResponseDto<object>.Failure(
+                (int)statusCode,
                 message,
-                traceId = context.TraceIdentifier
-            };
+                context.TraceIdentifier);
 
             await context.Response.WriteAsync(
-                JsonSerializer.Serialize(response));
+                JsonSerializer.Serialize(
+                    response,
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web)));
         }
     }
 }

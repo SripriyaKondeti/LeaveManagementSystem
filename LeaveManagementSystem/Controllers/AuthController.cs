@@ -17,11 +17,14 @@ public class AuthController : ControllerBase
 
     // POST: api/auth/login
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDto>> Login(
+    public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> Login(
         LoginDto loginDto)
     {
         var response = await _authService.LoginAsync(loginDto);
 
-        return Ok(response);
+        return Ok(ApiResponseDto<LoginResponseDto>.Success(
+            StatusCodes.Status200OK,
+            "Login successful.",
+            response));
     }
 }

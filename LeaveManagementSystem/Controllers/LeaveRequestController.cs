@@ -23,7 +23,7 @@ public class LeaveRequestController : ControllerBase
     // Employee can create only for themselves.
     // Manager can create for any employee.
     [HttpPost]
-    public async Task<ActionResult<LeaveRequestDto>> CreateLeaveRequest(
+    public async Task<ActionResult<ApiResponseDto<LeaveRequestDto>>> CreateLeaveRequest(
         CreateLeaveRequestDto leaveRequestDto)
     {
         if (!User.IsInRole("Manager"))
@@ -32,14 +32,14 @@ public class LeaveRequestController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status401Unauthorized,
-                    new { statusCode = 401, message = "Employee information is missing from the token." });
+                    ApiResponseDto<object>.Failure(401, "Employee information is missing from the token."));
             }
 
             if (loggedInEmployeeId != leaveRequestDto.EmployeeId)
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    new { statusCode = 403, message = "You can create a leave request only for yourself." });
+                    ApiResponseDto<object>.Failure(403, "You can create a leave request only for yourself."));
             }
         }
 
@@ -49,7 +49,7 @@ public class LeaveRequestController : ControllerBase
         return CreatedAtAction(
             nameof(GetLeaveRequest),
             new { id = result.LeaveRequestId },
-            result);
+            ApiResponseDto<LeaveRequestDto>.Success(201, "Leave request created successfully.", result));
     }
 
 
@@ -57,7 +57,7 @@ public class LeaveRequestController : ControllerBase
     // Manager can view all.
     // Employee can view only their own requests.
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LeaveRequestDto>>>
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<LeaveRequestDto>>>>
         GetLeaveRequests(
             int? employeeId,
             int? leaveTypeId,
@@ -71,7 +71,7 @@ public class LeaveRequestController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status401Unauthorized,
-                    "Employee information is missing from the token.");
+                    ApiResponseDto<object>.Failure(401, "Employee information is missing from the token."));
             }
 
             // Employee cannot request another employee's data.
@@ -80,7 +80,7 @@ public class LeaveRequestController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    new { statusCode = 403, message = "You don't have access to these leave requests." });
+                    ApiResponseDto<object>.Failure(403, "You don't have access to these leave requests."));
             }
 
             // Force employee filter to logged-in employee.
@@ -95,7 +95,7 @@ public class LeaveRequestController : ControllerBase
                 fromDate,
                 toDate);
 
-        return Ok(leaveRequests);
+        return Ok(ApiResponseDto<IEnumerable<LeaveRequestDto>>.Success(200, "Leave requests retrieved successfully.", leaveRequests));
     }
 
 
@@ -103,12 +103,12 @@ public class LeaveRequestController : ControllerBase
     // Manager can view any request.
     // Employee can view only their own request.
     [HttpGet("{id}")]
-    public async Task<ActionResult<LeaveRequestDto>>
+    public async Task<ActionResult<ApiResponseDto<LeaveRequestDto>>>
         GetLeaveRequest(int id)
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Leave request ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Leave request ID must be greater than zero."));
         }
 
         var loggedInEmployeeId = 0;
@@ -116,7 +116,7 @@ public class LeaveRequestController : ControllerBase
         if (!User.IsInRole("Manager") && !TryGetLoggedInEmployeeId(out loggedInEmployeeId))
         {
             return StatusCode(StatusCodes.Status401Unauthorized,
-                new { statusCode = 401, message = "Employee information is missing from the token." });
+                ApiResponseDto<object>.Failure(401, "Employee information is missing from the token."));
         }
 
         var leaveRequest = await _leaveRequestService
@@ -124,8 +124,7 @@ public class LeaveRequestController : ControllerBase
 
         if (leaveRequest == null)
         {
-            return NotFound(
-                $"Leave request with ID {id} does not exist.");
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Leave request with ID {id} does not exist."));
         }
 
         if (!User.IsInRole("Manager"))
@@ -134,11 +133,11 @@ public class LeaveRequestController : ControllerBase
             {
                 return StatusCode(
                     StatusCodes.Status403Forbidden,
-                    new { statusCode = 403, message = "You don't have access to this leave request." });
+                    ApiResponseDto<object>.Failure(403, "You don't have access to this leave request."));
             }
         }
 
-        return Ok(leaveRequest);
+        return Ok(ApiResponseDto<LeaveRequestDto>.Success(200, "Leave request retrieved successfully.", leaveRequest));
     }
 
 
@@ -146,12 +145,12 @@ public class LeaveRequestController : ControllerBase
     // Manager can view any employee's history.
     // Employee can view only their own history.
     [HttpGet("/api/employees/{employeeId}/leaves")]
-    public async Task<ActionResult<IEnumerable<LeaveRequestDto>>>
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<LeaveRequestDto>>>>
         GetEmployeeLeaves(int employeeId)
     {
         if (employeeId <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Employee ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Employee ID must be greater than zero."));
         }
 
         var loggedInEmployeeId = 0;
@@ -159,13 +158,13 @@ public class LeaveRequestController : ControllerBase
         if (!User.IsInRole("Manager") && !TryGetLoggedInEmployeeId(out loggedInEmployeeId))
         {
             return StatusCode(StatusCodes.Status401Unauthorized,
-                new { statusCode = 401, message = "Employee information is missing from the token." });
+                ApiResponseDto<object>.Failure(401, "Employee information is missing from the token."));
         }
 
         if (!User.IsInRole("Manager") && loggedInEmployeeId != employeeId)
         {
             return StatusCode(StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "You don't have access to this employee's leave history." });
+                ApiResponseDto<object>.Failure(403, "You don't have access to this employee's leave history."));
         }
 
         var leaveRequests = await _leaveRequestService
@@ -173,36 +172,35 @@ public class LeaveRequestController : ControllerBase
 
         if (leaveRequests == null)
         {
-            return NotFound(
-                $"Employee with ID {employeeId} does not exist.");
+            return NotFound(ApiResponseDto<object>.Failure(404, $"Employee with ID {employeeId} does not exist."));
         }
 
-        return Ok(leaveRequests);
+        return Ok(ApiResponseDto<IEnumerable<LeaveRequestDto>>.Success(200, "Employee leave history retrieved successfully.", leaveRequests));
     }
 
 
     // PUT: api/leaves/{id}/approve
     // Manager only.
     [HttpPut("{id}/approve")]
-    public async Task<ActionResult<LeaveRequestDto>> ApproveLeaveRequest(
+    public async Task<ActionResult<ApiResponseDto<LeaveRequestDto>>> ApproveLeaveRequest(
         int id,
         LeaveActionDto leaveActionDto)
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Leave request ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Leave request ID must be greater than zero."));
         }
 
         if (leaveActionDto == null)
         {
-            return BadRequest(new { statusCode = 400, message = "Approval payload is required." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Approval payload is required."));
         }
 
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can approve leave requests." });
+                ApiResponseDto<object>.Failure(403, "Only managers can approve leave requests."));
         }
 
         leaveActionDto.ApprovedBy = User.FindFirstValue(ClaimTypes.Name);
@@ -210,32 +208,32 @@ public class LeaveRequestController : ControllerBase
         var result = await _leaveRequestService
             .ApproveLeaveRequestAsync(id, leaveActionDto);
 
-        return Ok(result);
+        return Ok(ApiResponseDto<LeaveRequestDto>.Success(200, "Leave request approved successfully.", result));
     }
 
 
     // PUT: api/leaves/{id}/reject
     // Manager only.
     [HttpPut("{id}/reject")]
-    public async Task<ActionResult<LeaveRequestDto>> RejectLeaveRequest(
+    public async Task<ActionResult<ApiResponseDto<LeaveRequestDto>>> RejectLeaveRequest(
         int id,
         LeaveActionDto leaveActionDto)
     {
         if (id <= 0)
         {
-            return BadRequest(new { statusCode = 400, message = "Leave request ID must be greater than zero." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Leave request ID must be greater than zero."));
         }
 
         if (leaveActionDto == null)
         {
-            return BadRequest(new { statusCode = 400, message = "Rejection payload is required." });
+            return BadRequest(ApiResponseDto<object>.Failure(400, "Rejection payload is required."));
         }
 
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can reject leave requests." });
+                ApiResponseDto<object>.Failure(403, "Only managers can reject leave requests."));
         }
 
         leaveActionDto.ApprovedBy = User.FindFirstValue(ClaimTypes.Name);
@@ -243,7 +241,7 @@ public class LeaveRequestController : ControllerBase
         var result = await _leaveRequestService
             .RejectLeaveRequestAsync(id, leaveActionDto);
 
-        return Ok(result);
+        return Ok(ApiResponseDto<LeaveRequestDto>.Success(200, "Leave request rejected successfully.", result));
     }
 
 

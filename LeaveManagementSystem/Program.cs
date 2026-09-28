@@ -1,5 +1,6 @@
 using System.Text;
 using LeaveManagementSystem.Data;
+using LeaveManagementSystem.DTOs;
 using LeaveManagementSystem.Middleware;
 using LeaveManagementSystem.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,7 +10,30 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value!.Errors
+                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage)
+                            ? "The supplied value is invalid."
+                            : error.ErrorMessage)
+                        .ToArray());
+
+            var response = ApiResponseDto<object>.Failure(
+                StatusCodes.Status400BadRequest,
+                "One or more validation errors occurred.",
+                context.HttpContext.TraceIdentifier,
+                errors);
+
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(response);
+        };
+    });
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -91,21 +115,17 @@ builder.Services.AddAuthentication(options =>
             context.HandleResponse();
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(new
-            {
-                statusCode = 401,
-                message = "Authentication is required or the token is invalid."
-            });
+            await context.Response.WriteAsJsonAsync(ApiResponseDto<object>.Failure(
+                StatusCodes.Status401Unauthorized,
+                "Authentication is required or the token is invalid."));
         },
         OnForbidden = async context =>
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(new
-            {
-                statusCode = 403,
-                message = "You do not have permission to access this resource."
-            });
+            await context.Response.WriteAsJsonAsync(ApiResponseDto<object>.Failure(
+                StatusCodes.Status403Forbidden,
+                "You do not have permission to access this resource."));
         }
     };
 

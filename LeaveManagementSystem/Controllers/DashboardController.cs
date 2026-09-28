@@ -20,18 +20,18 @@ public class DashboardController : ControllerBase
     // GET: api/dashboard/leave-summary
     // Manager only
     [HttpGet("leave-summary")]
-    public async Task<ActionResult<LeaveSummaryDto>> GetLeaveSummary()
+    public async Task<ActionResult<ApiResponseDto<LeaveSummaryDto>>> GetLeaveSummary()
     {
         if (!User.IsInRole("Manager"))
         {
             return StatusCode(
                 StatusCodes.Status403Forbidden,
-                new { statusCode = 403, message = "Only managers can access the dashboard." });
+                ApiResponseDto<object>.Failure(403, "Only managers can access the dashboard."));
         }
 
         var summary = await _dashboardService
             .GetLeaveSummaryAsync();
 
-        return Ok(summary);
+        return Ok(ApiResponseDto<LeaveSummaryDto>.Success(200, "Leave summary retrieved successfully.", summary));
     }
 }
