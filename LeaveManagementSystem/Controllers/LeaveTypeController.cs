@@ -18,17 +18,10 @@ public class LeaveTypeController : ControllerBase
     }
 
     // GET: api/leavetypes
-    // Manager only
+    // Managers and employees
     [HttpGet]
     public async Task<ActionResult<ApiResponseDto<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes()
     {
-        if (!User.IsInRole("Manager"))
-        {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                ApiResponseDto<object>.Failure(403, "Only managers can view leave types."));
-        }
-
         var leaveTypes = await _leaveTypeService
             .GetLeaveTypesAsync();
 

@@ -15,7 +15,6 @@
         "POST:/api/employees",
         "DELETE:/api/employees/{id}",
 
-        "GET:/api/leavetypes",
         "GET:/api/leavetypes/{id}",
         "POST:/api/leavetypes",
         "PUT:/api/leavetypes/{id}",
@@ -36,6 +35,8 @@
         "PUT:/api/employees/{id}",
 
         "GET:/api/employees/{employeeId}/leave-balance",
+
+        "GET:/api/leavetypes",
 
         "POST:/api/leaves",
         "GET:/api/leaves",

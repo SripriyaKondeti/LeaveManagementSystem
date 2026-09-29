@@ -11,7 +11,6 @@ public static class SwaggerRoleConfiguration
             "POST:/api/employees",
             "DELETE:/api/employees/{id}",
 
-            "GET:/api/leavetypes",
             "GET:/api/leavetypes/{id}",
             "POST:/api/leavetypes",
             "PUT:/api/leavetypes/{id}",
@@ -28,6 +27,8 @@ public static class SwaggerRoleConfiguration
             "PUT:/api/employees/{id}",
 
             "GET:/api/employees/{employeeId}/leave-balance",
+
+            "GET:/api/leavetypes",
 
             "POST:/api/leaves",
             "GET:/api/leaves",

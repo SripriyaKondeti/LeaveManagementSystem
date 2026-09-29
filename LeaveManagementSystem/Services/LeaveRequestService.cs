@@ -345,12 +345,24 @@ public class LeaveRequestService
                 "Only pending leave requests can be approved.");
         }
 
-        // 3. Calculate number of days
+        // 3. Check leave type is still active
+        var leaveTypeIsActive = await _context.LeaveTypes
+            .AnyAsync(l =>
+                l.LeaveTypeId == leaveRequest.LeaveTypeId &&
+                l.IsActive);
+
+        if (!leaveTypeIsActive)
+        {
+            throw new ConflictException(
+                "Cannot approve leave because the leave type is inactive.");
+        }
+
+        // 4. Calculate number of days
         var numberOfDays = GetRequestedDayCount(
             leaveRequest.FromDate,
             leaveRequest.ToDate);
 
-        // 4. Find leave balance
+        // 5. Find leave balance
         var leaveBalance = await _context.LeaveBalances
             .FirstOrDefaultAsync(b =>
                 b.EmployeeId == leaveRequest.EmployeeId &&
@@ -362,18 +374,18 @@ public class LeaveRequestService
                 "Leave balance was not found for this employee and leave type.");
         }
 
-        // 5. Calculate remaining days
+        // 6. Calculate remaining days
         var remainingDays =
             leaveBalance.TotalDays - leaveBalance.UsedDays;
 
-        // 6. Check sufficient balance
+        // 7. Check sufficient balance
         if (numberOfDays > remainingDays)
         {
             throw new InvalidOperationException(
                 $"Insufficient leave balance. Remaining days: {remainingDays}.");
         }
 
-        // 7. Approve request
+        // 8. Approve request
         leaveRequest.Status = "Approved";
 
         leaveRequest.ApprovedBy =
@@ -382,7 +394,7 @@ public class LeaveRequestService
         leaveRequest.Comments =
             leaveActionDto.Comments;
 
-        // 8. Update balance only after approval
+        // 9. Update balance only after approval
         leaveBalance.UsedDays += numberOfDays;
 
         await _context.SaveChangesAsync();

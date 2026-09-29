@@ -95,7 +95,11 @@ public class LeaveRequestController : ControllerBase
                 fromDate,
                 toDate);
 
-        return Ok(ApiResponseDto<IEnumerable<LeaveRequestDto>>.Success(200, "Leave requests retrieved successfully.", leaveRequests));
+        var message = leaveRequests.Any()
+            ? "Leave requests retrieved successfully."
+            : "No leave requests found.";
+
+        return Ok(ApiResponseDto<IEnumerable<LeaveRequestDto>>.Success(200, message, leaveRequests));
     }
 
 
@@ -175,7 +179,11 @@ public class LeaveRequestController : ControllerBase
             return NotFound(ApiResponseDto<object>.Failure(404, $"Employee with ID {employeeId} does not exist."));
         }
 
-        return Ok(ApiResponseDto<IEnumerable<LeaveRequestDto>>.Success(200, "Employee leave history retrieved successfully.", leaveRequests));
+        var message = leaveRequests.Any()
+            ? "Employee leave history retrieved successfully."
+            : "No leave requests found for this employee.";
+
+        return Ok(ApiResponseDto<IEnumerable<LeaveRequestDto>>.Success(200, message, leaveRequests));
     }
 
 
