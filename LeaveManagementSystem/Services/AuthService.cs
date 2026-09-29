@@ -46,6 +46,7 @@ public class AuthService
 
         // Find user
         var user = await _context.Users
+            .Include(u => u.Employee)
             .FirstOrDefaultAsync(u =>
                 u.Username == loginDto.Username.Trim());
 
@@ -56,11 +57,16 @@ public class AuthService
             loginDto.Password);
 
         if (user == null ||
-            !user.IsActive ||
             passwordResult == PasswordVerificationResult.Failed)
         {
             throw new UnauthorizedAccessException(
                 "Invalid username or password.");
+        }
+
+        if (user.Employee is { IsActive: false })
+        {
+            throw new UnauthorizedAccessException(
+                "Your account is inactive. Please contact your manager.");
         }
 
         // Generate JWT

@@ -76,7 +76,7 @@ public class EmployeeController : ControllerBase
     // Manager only
     [HttpPost]
     public async Task<ActionResult<ApiResponseDto<EmployeeDto>>> CreateEmployee(
-        EmployeeDto employeeDto)
+        CreateEmployeeDto employeeDto)
     {
         if (!User.IsInRole("Manager"))
         {

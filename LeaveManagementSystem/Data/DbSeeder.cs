@@ -21,8 +21,7 @@ public static class DbSeeder
             {
                 Username = "priya",
                 Role = "Employee",
-                EmployeeId = 1,
-                IsActive = true
+                EmployeeId = 1
             };
 
             priya.PasswordHash = passwordHasher.HashPassword(
@@ -33,8 +32,7 @@ public static class DbSeeder
             {
                 Username = "poojitha",
                 Role = "Employee",
-                EmployeeId = 2,
-                IsActive = true
+                EmployeeId = 2
             };
 
             poojitha.PasswordHash = passwordHasher.HashPassword(
@@ -45,8 +43,7 @@ public static class DbSeeder
             {
                 Username = "arjun",
                 Role = "Employee",
-                EmployeeId = 3,
-                IsActive = true
+                EmployeeId = 3
             };
 
             arjun.PasswordHash = passwordHasher.HashPassword(
@@ -57,8 +54,7 @@ public static class DbSeeder
             {
                 Username = "sai",
                 Role = "Manager",
-                EmployeeId = 5,
-                IsActive = true
+                EmployeeId = 5
             };
 
             sai.PasswordHash = passwordHasher.HashPassword(

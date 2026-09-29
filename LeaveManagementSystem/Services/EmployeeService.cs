@@ -2,6 +2,7 @@
 using LeaveManagementSystem.DTOs;
 using LeaveManagementSystem.Models;
 using LeaveManagementSystem.Middleware;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagementSystem.Services;
@@ -49,10 +50,11 @@ public class EmployeeService
     }
 
     public async Task<EmployeeDto> CreateEmployeeAsync(
-    EmployeeDto employeeDto)
+    CreateEmployeeDto employeeDto)
     {
         var employeeCode = employeeDto.EmployeeCode.Trim();
         var email = employeeDto.Email.Trim();
+        var username = employeeDto.Username.Trim();
 
         if (await _context.Employees.AnyAsync(e =>
                 e.EmployeeCode == employeeCode ||
@@ -60,6 +62,13 @@ public class EmployeeService
         {
             throw new ConflictException(
                 "An employee with the same code or email already exists.");
+        }
+
+        if (await _context.Users.AnyAsync(u =>
+                u.Username.ToLower() == username.ToLower()))
+        {
+            throw new ConflictException(
+                $"Username '{username}' is already taken.");
         }
 
         var employee = new Employee
@@ -74,33 +83,47 @@ public class EmployeeService
 
         _context.Employees.Add(employee);
 
-        await _context.SaveChangesAsync();
+        var user = new User
+        {
+            Username = username,
+            Role = employeeDto.Role,
+            Employee = employee
+        };
 
-        // Create leave balances for the new employee
+        user.PasswordHash = new PasswordHasher<User>()
+            .HashPassword(user, employeeDto.Password);
+
+        _context.Users.Add(user);
+
         if (employee.IsActive)
         {
             var activeLeaveTypes = await _context.LeaveTypes
                 .Where(l => l.IsActive)
                 .ToListAsync();
 
-            var leaveBalances = activeLeaveTypes
+            _context.LeaveBalances.AddRange(activeLeaveTypes
                 .Select(leaveType => new LeaveBalance
                 {
-                    EmployeeId = employee.EmployeeId,
+                    Employee = employee,
                     LeaveTypeId = leaveType.LeaveTypeId,
                     TotalDays = leaveType.MaximumDays,
                     UsedDays = 0
-                })
-                .ToList();
-
-            _context.LeaveBalances.AddRange(leaveBalances);
-
-            await _context.SaveChangesAsync();
+                }));
         }
 
-        employeeDto.EmployeeId = employee.EmployeeId;
+        // Single save so the employee, login and balances are created together.
+        await _context.SaveChangesAsync();
 
-        return employeeDto;
+        return new EmployeeDto
+        {
+            EmployeeId = employee.EmployeeId,
+            EmployeeCode = employee.EmployeeCode,
+            Name = employee.Name,
+            Email = employee.Email,
+            Department = employee.Department,
+            JoiningDate = employee.JoiningDate,
+            IsActive = employee.IsActive
+        };
     }
 
     public async Task<EmployeeDto?> UpdateEmployeeAsync(
@@ -133,6 +156,8 @@ public class EmployeeService
         employee.Department = employeeDto.Department;
         employee.JoiningDate = employeeDto.JoiningDate;
 
+        var wasInactive = !employee.IsActive;
+
         if (canChangeActiveStatus)
         {
             employee.IsActive = employeeDto.IsActive;
@@ -140,6 +165,32 @@ public class EmployeeService
         else
         {
             employeeDto.IsActive = employee.IsActive;
+        }
+
+        if (wasInactive && employee.IsActive)
+        {
+            var activeLeaveTypes = await _context.LeaveTypes
+                .Where(l => l.IsActive)
+                .ToListAsync();
+
+            var existingLeaveTypeIds = await _context.LeaveBalances
+                .Where(b => b.EmployeeId == id)
+                .Select(b => b.LeaveTypeId)
+                .ToListAsync();
+
+            // Old balances are kept; only leave types added while inactive get a new balance.
+            var missingBalances = activeLeaveTypes
+                .Where(l => !existingLeaveTypeIds.Contains(l.LeaveTypeId))
+                .Select(l => new LeaveBalance
+                {
+                    EmployeeId = id,
+                    LeaveTypeId = l.LeaveTypeId,
+                    TotalDays = l.MaximumDays,
+                    UsedDays = 0
+                })
+                .ToList();
+
+            _context.LeaveBalances.AddRange(missingBalances);
         }
 
         await _context.SaveChangesAsync();
@@ -166,16 +217,6 @@ public class EmployeeService
         }
 
         employee.IsActive = false;
-
-        var employeeBalances = await _context.LeaveBalances
-            .Where(b => b.EmployeeId == id)
-            .ToListAsync();
-
-        foreach (var balance in employeeBalances)
-        {
-            balance.TotalDays = 0;
-            balance.UsedDays = 0;
-        }
 
         await _context.SaveChangesAsync();
 

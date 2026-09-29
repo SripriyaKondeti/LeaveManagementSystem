@@ -71,24 +71,31 @@ public class EmployeeLifecycleTests
     }
 
     [Fact]
-    public async Task DeactivateEmployee_ZerosEmployeeLeaveBalances()
+    public async Task DeactivateThenReactivateEmployee_RestoresOldBalances()
     {
         await using var context = CreateContext();
         var service = new EmployeeService(context);
+        var balanceService = new LeaveBalanceService(context);
 
-        var result = await service.DeactivateEmployeeAsync(1);
+        Assert.True(await service.DeactivateEmployeeAsync(1));
 
-        Assert.True(result);
-
-        var balances = await context.LeaveBalances
-            .Where(b => b.EmployeeId == 1)
-            .ToListAsync();
-
-        Assert.All(balances, b =>
+        await service.UpdateEmployeeAsync(1, new EmployeeDto
         {
-            Assert.Equal(0, b.TotalDays);
-            Assert.Equal(0, b.UsedDays);
-        });
+            EmployeeId = 1,
+            EmployeeCode = "EMP001",
+            Name = "Test Employee",
+            Email = "test@example.com",
+            Department = "IT",
+            JoiningDate = DateTime.Today.AddDays(-365),
+            IsActive = true
+        }, true);
+
+        var balances = (await balanceService.GetLeaveBalanceAsync(1))!.ToList();
+
+        var annual = Assert.Single(balances);
+        Assert.Equal(15, annual.TotalDays);
+        Assert.Equal(3, annual.UsedDays);
+        Assert.Equal(12, annual.RemainingDays);
     }
 
     [Fact]
