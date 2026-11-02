@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Manager.ManagerHomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Manager"
+    x:DataType="vm:ManagerHomeViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Home">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Sign Out" Command="{Binding SignOutCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <RefreshView Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Padding="18" Spacing="10">
+                <Label Text="Overview" FontSize="24" FontAttributes="Bold" />
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                    <Border Style="{StaticResource Card}" Margin="0">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenTeamCommand}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout>
+                            <Label Text="Employees" Style="{StaticResource MutedText}" />
+                            <Label Text="{Binding Summary.ActiveEmployees}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource Primary}" />
+                            <Label Text="{Binding Summary.TotalEmployees, StringFormat='active of {0}'}" Style="{StaticResource MutedText}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenApprovalsCommand}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout>
+                            <Label Text="Pending requests" Style="{StaticResource MutedText}" />
+                            <Label Text="{Binding Summary.PendingRequests}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource Warning}" />
+                            <Label Text="tap to review" Style="{StaticResource MutedText}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0">
+                        <VerticalStackLayout>
+                            <Label Text="Approved" Style="{StaticResource MutedText}" />
+                            <Label Text="{Binding Summary.ApprovedRequests}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource Success}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Margin="0">
+                        <VerticalStackLayout>
+                            <Label Text="Rejected" Style="{StaticResource MutedText}" />
+                            <Label Text="{Binding Summary.RejectedRequests}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource Danger}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource Card}" Margin="0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Leave days taken" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="{Binding Summary.TotalLeavesTaken}" FontSize="28" FontAttributes="Bold" />
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

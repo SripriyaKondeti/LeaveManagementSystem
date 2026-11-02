@@ -54,7 +54,7 @@ public static class DbSeeder
             {
                 Username = "sai",
                 Role = "Manager",
-                EmployeeId = 5
+                EmployeeId = null
             };
 
             sai.PasswordHash = passwordHasher.HashPassword(

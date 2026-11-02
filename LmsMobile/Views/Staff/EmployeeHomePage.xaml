@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Staff.EmployeeHomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Staff"
+    xmlns:m="clr-namespace:LmsMobile.Models"
+    x:DataType="vm:EmployeeHomeViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Home">
+
+    <RefreshView Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Padding="18" Spacing="10">
+                <Label Text="{Binding Greeting}" FontSize="24" FontAttributes="Bold" />
+                <Label Text="Your leave balance" Style="{StaticResource MutedText}" />
+
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Balances}" Spacing="0">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="m:LeaveBalance">
+                            <Border Style="{StaticResource Card}">
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                    <Label Text="{Binding LeaveType}" FontAttributes="Bold" FontSize="16" />
+                                    <Label Grid.Row="1" Text="{Binding OfTotal}" Style="{StaticResource MutedText}" />
+                                    <Label Grid.Column="1" Grid.RowSpan="2" Text="{Binding RemainingDays}"
+                                           FontSize="34" FontAttributes="Bold" VerticalOptions="Center"
+                                           TextColor="{StaticResource Primary}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Text="No leave balances yet." Style="{StaticResource MutedText}"
+                       IsVisible="{Binding NoBalances}" />
+
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Requests waiting for approval" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="{Binding PendingCount}" FontSize="28"
+                               FontAttributes="Bold" TextColor="{StaticResource Warning}" />
+                    </Grid>
+                </Border>
+
+                <Button Text="Request Leave" Command="{Binding RequestLeaveCommand}" Margin="0,8,0,0" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

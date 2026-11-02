@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Manager.LeaveTypeEditPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Manager"
+    x:DataType="vm:LeaveTypeEditViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="{Binding PageTitle}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="8">
+            <Label Text="Name" FontAttributes="Bold" />
+            <Entry Text="{Binding LeaveTypeName}" MaxLength="100" />
+            <Label Text="Maximum days per year (1–366)" FontAttributes="Bold" />
+            <Entry Text="{Binding MaximumDays}" Keyboard="Numeric" MaxLength="3" />
+            <HorizontalStackLayout Spacing="12">
+                <Label Text="Active" FontAttributes="Bold" VerticalOptions="Center" />
+                <Switch IsToggled="{Binding IsActive}" />
+            </HorizontalStackLayout>
+
+            <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+            <Button Text="Save" Command="{Binding SaveCommand}" Margin="0,8,0,0" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

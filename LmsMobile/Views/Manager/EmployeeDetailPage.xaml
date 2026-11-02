@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Manager.EmployeeDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Manager"
+    xmlns:m="clr-namespace:LmsMobile.Models"
+    x:DataType="vm:EmployeeDetailViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Employee">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Edit" Command="{Binding EditCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <RefreshView Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Padding="18" Spacing="8">
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                        <Label Text="{Binding Employee.Name}" FontSize="20" FontAttributes="Bold" />
+                        <Label Grid.Column="1" Text="{Binding Employee.StatusText}" Style="{StaticResource Tag}"
+                               BackgroundColor="{Binding Employee.StatusText, Converter={StaticResource StatusColor}}" />
+                        <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Employee.Subtitle}" Style="{StaticResource MutedText}" />
+                        <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Employee.Email}" />
+                        <Label Grid.Row="3" Grid.ColumnSpan="2"
+                               Text="{Binding Employee.JoiningDate, StringFormat='Joined {0:dd MMM yyyy}'}" Style="{StaticResource MutedText}" />
+                    </Grid>
+                </Border>
+
+                <Label Text="Leave balance" FontAttributes="Bold" FontSize="17" Margin="0,8,0,0" />
+                <Label Text="{Binding BalanceNote}" IsVisible="{Binding HasBalanceNote}"
+                       Style="{StaticResource MutedText}" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Balances}" Spacing="0">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="m:LeaveBalance">
+                            <Border Style="{StaticResource Card}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding LeaveType}" VerticalOptions="Center" />
+                                    <Label Grid.Column="1" FontAttributes="Bold" VerticalOptions="Center">
+                                        <Label.Text>
+                                            <MultiBinding StringFormat="{}{0} left / {1} total · {2} used">
+                                                <Binding Path="RemainingDays" />
+                                                <Binding Path="TotalDays" />
+                                                <Binding Path="UsedDays" />
+                                            </MultiBinding>
+                                        </Label.Text>
+                                    </Label>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Text="Leave history" FontAttributes="Bold" FontSize="17" Margin="0,8,0,0" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding History}" Spacing="0">
+                    <BindableLayout.EmptyView>
+                        <Label Text="No leave requests yet." Style="{StaticResource MutedText}" />
+                    </BindableLayout.EmptyView>
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="m:LeaveRequest">
+                            <Border Style="{StaticResource Card}">
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                                    <Label Text="{Binding LeaveTypeName}" FontAttributes="Bold" />
+                                    <Label Grid.Column="1" Text="{Binding Status}" Style="{StaticResource Tag}"
+                                           BackgroundColor="{Binding Status, Converter={StaticResource StatusColor}}" />
+                                    <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding DateRange}" />
+                                    <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Reason}" Style="{StaticResource MutedText}" />
+                                    <Label Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding CommentText}" FontAttributes="Italic"
+                                           IsVisible="{Binding HasComments}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Manager.LeaveTypesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Manager"
+    xmlns:m="clr-namespace:LmsMobile.Models"
+    x:DataType="vm:LeaveTypesViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Leave Types">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,*" Padding="18,12,18,0">
+        <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+        <RefreshView Grid.Row="1" Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+            <CollectionView ItemsSource="{Binding LeaveTypes}">
+                <CollectionView.EmptyView>
+                    <Label Text="No leave types yet. Tap Add to create one." Style="{StaticResource MutedText}"
+                           HorizontalOptions="Center" Margin="0,40" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="m:LeaveType">
+                        <Border Style="{StaticResource Card}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LeaveTypesViewModel}}, Path=EditCommand, x:DataType=vm:LeaveTypesViewModel}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                                <Label Text="{Binding LeaveTypeName}" FontAttributes="Bold" FontSize="16" />
+                                <Label Grid.Column="1" Text="{Binding StatusText}" Style="{StaticResource Tag}"
+                                       BackgroundColor="{Binding StatusText, Converter={StaticResource StatusColor}}" />
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Summary}" Style="{StaticResource MutedText}" />
+                                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Deactivate" HorizontalOptions="Start"
+                                        IsVisible="{Binding IsActive}" BackgroundColor="Transparent"
+                                        TextColor="{StaticResource Danger}" BorderColor="{StaticResource Danger}" BorderWidth="1"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LeaveTypesViewModel}}, Path=DeactivateCommand, x:DataType=vm:LeaveTypesViewModel}"
+                                        CommandParameter="{Binding .}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

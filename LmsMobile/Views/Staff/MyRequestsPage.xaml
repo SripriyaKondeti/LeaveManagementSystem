@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Staff.MyRequestsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Staff"
+    xmlns:m="clr-namespace:LmsMobile.Models"
+    x:DataType="vm:MyRequestsViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="My Requests">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="18,12,18,0">
+        <Picker Title="Filter by status" ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" />
+        <Label Grid.Row="1" Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+        <RefreshView Grid.Row="2" Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+            <CollectionView ItemsSource="{Binding Requests}">
+                <CollectionView.EmptyView>
+                    <Label Text="No leave requests to show." Style="{StaticResource MutedText}"
+                           HorizontalOptions="Center" Margin="0,40" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="m:LeaveRequest">
+                        <Border Style="{StaticResource Card}">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                                <Label Text="{Binding LeaveTypeName}" FontAttributes="Bold" FontSize="16" />
+                                <Label Grid.Column="1" Text="{Binding Status}" Style="{StaticResource Tag}"
+                                       BackgroundColor="{Binding Status, Converter={StaticResource StatusColor}}" />
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding DateRange}" />
+                                <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Reason}" Style="{StaticResource MutedText}" />
+                                <Label Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding CommentText}" FontAttributes="Italic"
+                                       IsVisible="{Binding HasComments}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Manager.EmployeeEditPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Manager"
+    x:DataType="vm:EmployeeEditViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="{Binding PageTitle}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="8">
+            <Label Text="Employee code" FontAttributes="Bold" />
+            <Entry Text="{Binding EmployeeCode}" MaxLength="50" />
+            <Label Text="Name" FontAttributes="Bold" />
+            <Entry Text="{Binding Name}" MaxLength="150" />
+            <Label Text="Email" FontAttributes="Bold" />
+            <Entry Text="{Binding Email}" Keyboard="Email" MaxLength="254" />
+            <Label Text="Department" FontAttributes="Bold" />
+            <Entry Text="{Binding Department}" MaxLength="150" />
+            <Label Text="Joining date" FontAttributes="Bold" />
+            <DatePicker Date="{Binding JoiningDate}" />
+            <HorizontalStackLayout Spacing="12">
+                <Label Text="Active" FontAttributes="Bold" VerticalOptions="Center" />
+                <Switch IsToggled="{Binding IsActive}" />
+            </HorizontalStackLayout>
+
+            <VerticalStackLayout IsVisible="{Binding IsNew}" Spacing="8">
+                <Label Text="Sign-in account" FontAttributes="Bold" FontSize="17" Margin="0,10,0,0" />
+                <Label Text="Username" FontAttributes="Bold" />
+                <Entry Text="{Binding Username}" MaxLength="50" Placeholder="3–50 letters, digits, . _ -" />
+                <Label Text="Password" FontAttributes="Bold" />
+                <Entry Text="{Binding Password}" IsPassword="True" MaxLength="100" />
+                <Label Text="At least 8 characters with upper and lower case, a digit and a special character."
+                       Style="{StaticResource MutedText}" />
+                <Label Text="Role" FontAttributes="Bold" />
+                <Picker ItemsSource="{Binding Roles}" SelectedItem="{Binding SelectedRole}" />
+            </VerticalStackLayout>
+
+            <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+            <Button Text="Save" Command="{Binding SaveCommand}" Margin="0,8,0,0" />
+            <Button Text="Deactivate" Command="{Binding DeactivateCommand}" IsVisible="{Binding CanDeactivate}"
+                    BackgroundColor="Transparent" TextColor="{StaticResource Danger}"
+                    BorderColor="{StaticResource Danger}" BorderWidth="1" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

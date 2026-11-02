@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Manager.ApprovalsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Manager"
+    xmlns:m="clr-namespace:LmsMobile.Models"
+    x:DataType="vm:ApprovalsViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Approvals">
+
+    <Grid RowDefinitions="Auto,*" Padding="18,12,18,0">
+        <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+        <RefreshView Grid.Row="1" Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+            <CollectionView ItemsSource="{Binding Pending}">
+                <CollectionView.EmptyView>
+                    <Label Text="No pending requests. You're all caught up." Style="{StaticResource MutedText}"
+                           HorizontalOptions="Center" Margin="0,40" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="m:LeaveRequest">
+                        <Border Style="{StaticResource Card}">
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4" ColumnSpacing="10">
+                                <Label Grid.ColumnSpan="2" Text="{Binding EmployeeName}" FontAttributes="Bold" FontSize="16" />
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding LeaveTypeName}" TextColor="{StaticResource Primary}" />
+                                <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding DateRange}" />
+                                <Label Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding Reason}" Style="{StaticResource MutedText}" />
+                                <Button Grid.Row="4" Text="Approve" Margin="0,8,0,0" BackgroundColor="{StaticResource Success}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ApprovalsViewModel}}, Path=ApproveCommand, x:DataType=vm:ApprovalsViewModel}"
+                                        CommandParameter="{Binding .}" />
+                                <Button Grid.Row="4" Grid.Column="1" Text="Reject" Margin="0,8,0,0" BackgroundColor="{StaticResource Danger}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ApprovalsViewModel}}, Path=RejectCommand, x:DataType=vm:ApprovalsViewModel}"
+                                        CommandParameter="{Binding .}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

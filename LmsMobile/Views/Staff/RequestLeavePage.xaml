@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Staff.RequestLeavePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Staff"
+    xmlns:m="clr-namespace:LmsMobile.Models"
+    x:DataType="vm:RequestLeaveViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Request Leave">
+
+    <RefreshView Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Padding="18" Spacing="8">
+                <Label Text="Leave type" FontAttributes="Bold" />
+                <Picker ItemsSource="{Binding LeaveTypes}" ItemDisplayBinding="{Binding LeaveTypeName, x:DataType=m:LeaveType}"
+                        SelectedItem="{Binding SelectedLeaveType}" Title="Choose a leave type" />
+
+                <Label Text="From" FontAttributes="Bold" />
+                <DatePicker Date="{Binding FromDate}" MinimumDate="{Binding Today}" />
+
+                <Label Text="To" FontAttributes="Bold" />
+                <DatePicker Date="{Binding ToDate}" MinimumDate="{Binding FromDate}" />
+
+                <Label Text="{Binding DayCountText}" FontAttributes="Bold" TextColor="{StaticResource Primary}" />
+
+                <Label Text="Reason" FontAttributes="Bold" />
+                <Editor Text="{Binding Reason}" MaxLength="500" HeightRequest="110" Placeholder="Why do you need leave?" />
+                <Label Text="{Binding ReasonCounter}" HorizontalOptions="End" Style="{StaticResource MutedText}" />
+
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+                <Button Text="Submit" Command="{Binding SubmitCommand}" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

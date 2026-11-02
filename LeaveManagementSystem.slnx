@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="LeaveManagementSystem/LeaveManagementSystem.csproj" />
+  <Project Path="LmsMobile/LmsMobile.csproj" />
 </Solution>

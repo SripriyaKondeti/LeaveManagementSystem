@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.LoginPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels"
+    x:DataType="vm:LoginViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Sign In">
+
+    <ScrollView VerticalOptions="Center">
+        <VerticalStackLayout Padding="28" Spacing="14" MaximumWidthRequest="460">
+            <Label Text="Leave Management" FontSize="30" FontAttributes="Bold"
+                   HorizontalOptions="Center" TextColor="{StaticResource Primary}" />
+            <Label Text="Sign in to continue" Style="{StaticResource MutedText}"
+                   HorizontalOptions="Center" Margin="0,0,0,12" />
+
+            <Entry Placeholder="Username" Text="{Binding Username}" AutomationId="UsernameEntry"
+                   Keyboard="Plain" ReturnType="Next" />
+            <Entry Placeholder="Password" IsPassword="True" Text="{Binding Password}"
+                   AutomationId="PasswordEntry" ReturnType="Go" ReturnCommand="{Binding SignInCommand}" />
+
+            <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}"
+                   Style="{StaticResource ErrorText}" HorizontalTextAlignment="Center" />
+
+            <Button Text="Sign In" Command="{Binding SignInCommand}" AutomationId="SignInButton" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

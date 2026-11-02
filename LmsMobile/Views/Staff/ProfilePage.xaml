@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="LmsMobile.Views.Staff.ProfilePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:LmsMobile.ViewModels.Staff"
+    x:DataType="vm:ProfileViewModel"
+    Style="{StaticResource PageBackground}"
+    Title="Profile">
+
+    <RefreshView Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Padding="18" Spacing="8">
+                <Label Text="Name" FontAttributes="Bold" />
+                <Entry Text="{Binding Name}" MaxLength="150" />
+                <Label Text="Email" FontAttributes="Bold" />
+                <Entry Text="{Binding Email}" Keyboard="Email" MaxLength="254" />
+                <Label Text="Department" FontAttributes="Bold" />
+                <Entry Text="{Binding Department}" MaxLength="150" />
+
+                <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="16">
+                        <Label Text="Employee code" Style="{StaticResource MutedText}" />
+                        <Label Grid.Column="1" Text="{Binding Profile.EmployeeCode}" />
+                        <Label Grid.Row="1" Text="Joining date" Style="{StaticResource MutedText}" />
+                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding Profile.JoiningDate, StringFormat='{0:dd MMM yyyy}'}" />
+                        <Label Grid.Row="2" Text="Status" Style="{StaticResource MutedText}" />
+                        <Label Grid.Row="2" Grid.Column="1" Text="{Binding Profile.StatusText}" />
+                    </Grid>
+                </Border>
+
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource ErrorText}" />
+
+                <Button Text="Save changes" Command="{Binding SaveCommand}" Margin="0,8,0,0" />
+                <Button Text="Sign Out" Command="{Binding SignOutCommand}"
+                        BackgroundColor="Transparent" TextColor="{StaticResource Danger}"
+                        BorderColor="{StaticResource Danger}" BorderWidth="1" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>
