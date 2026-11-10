@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+ using Microsoft.Extensions.Logging;
 using LmsMobile.Services;
 using LmsMobile.ViewModels;
 using LmsMobile.ViewModels.Manager;
@@ -42,7 +42,6 @@ public static class MauiProgram
 		builder.Services.AddTransient<MyRequestsViewModel>();
 		builder.Services.AddTransient<ProfilePage>();
 		builder.Services.AddTransient<ProfileViewModel>();
-
 		builder.Services.AddTransient<ManagerHomePage>();
 		builder.Services.AddTransient<ManagerHomeViewModel>();
 		builder.Services.AddTransient<TeamPage>();
